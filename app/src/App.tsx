@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Analytics } from '@vercel/analytics/react';
 import { Navigation } from '@/components/custom/Navigation';
 import { Hero } from '@/sections/Hero';
 import { UserHero } from '@/sections/UserHero';
@@ -311,6 +312,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppContent />
+        <Analytics />
       </AuthProvider>
     </QueryClientProvider>
   );
