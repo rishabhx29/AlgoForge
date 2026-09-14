@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Play, CheckCircle2, ChevronDown, Moon, Sun, Monitor, Trash2 } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import Editor, { BeforeMount } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import { getProblemById, executeCode } from '@/api/content';
 import { updateProblemStatus } from '@/api/userActions';
 import { toast } from 'sonner';
@@ -17,6 +18,59 @@ const SUPPORTED_LANGUAGES = [
   { id: 'java', name: 'Java' }
 ];
 
+const ALGOFORGE_DARK_THEME: editor.IStandaloneThemeData = {
+  base: 'vs-dark',
+  inherit: true,
+  rules: [
+    { token: '', foreground: 'e0e0e0', background: '141414' },
+    { token: 'comment', foreground: '4a4a6a', fontStyle: 'italic' },
+    { token: 'keyword', foreground: 'a088ff' },
+    { token: 'keyword.control', foreground: 'a088ff' },
+    { token: 'keyword.operator', foreground: 'a088ff' },
+    { token: 'string', foreground: '63e3ff' },
+    { token: 'string.escape', foreground: '63e3ff' },
+    { token: 'number', foreground: 'ff8a63' },
+    { token: 'number.float', foreground: 'ff8a63' },
+    { token: 'type', foreground: '63e3ff' },
+    { token: 'type.identifier', foreground: '63e3ff' },
+    { token: 'identifier', foreground: 'e0e0e0' },
+    { token: 'delimiter', foreground: '888888' },
+    { token: 'delimiter.bracket', foreground: '888888' },
+    { token: 'operator', foreground: 'a088ff' },
+    { token: 'variable', foreground: 'e0e0e0' },
+    { token: 'variable.predefined', foreground: '63e3ff' },
+    { token: 'constant', foreground: 'ff8a63' },
+    { token: 'annotation', foreground: 'a088ff' },
+    { token: 'regexp', foreground: '63e3ff' },
+    { token: 'tag', foreground: 'a088ff' },
+    { token: 'attribute.name', foreground: '63e3ff' },
+    { token: 'attribute.value', foreground: '63e3ff' },
+    { token: 'metatag', foreground: 'a088ff' },
+    { token: 'metatag.content', foreground: '63e3ff' },
+  ],
+  colors: {
+    'editor.background': '#141414',
+    'editor.foreground': '#e0e0e0',
+    'editor.lineHighlightBackground': '#1e1e2e',
+    'editor.selectionBackground': '#a088ff33',
+    'editor.inactiveSelectionBackground': '#a088ff1a',
+    'editorCursor.foreground': '#a088ff',
+    'editorWhitespace.foreground': '#333333',
+    'editorIndentGuide.background': '#2a2a2a',
+    'editorIndentGuide.activeBackground': '#444444',
+    'editorLineNumber.foreground': '#444444',
+    'editorLineNumber.activeForeground': '#a088ff',
+    'editor.selectionHighlightBackground': '#a088ff1a',
+    'editorBracketMatch.background': '#a088ff33',
+    'editorBracketMatch.border': '#a088ff66',
+    'editorGutter.background': '#141414',
+    'scrollbar.shadow': '#000000',
+    'scrollbarSlider.background': '#33333380',
+    'scrollbarSlider.hoverBackground': '#55555580',
+    'scrollbarSlider.activeBackground': '#77777780',
+  },
+};
+
 /**
  * ProblemWorkspace renders a full IDE-like workspace for a given coding problem.
  * It fetches the problem by ID, manages per-language code state in localStorage,
@@ -31,7 +85,7 @@ export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState<string>('// Write your code here');
   const [language, setLanguage] = useState<string>('javascript');
-  const [theme, setTheme] = useState<'vs-dark' | 'light'>('vs-dark');
+  const [theme, setTheme] = useState<'algoforge-dark' | 'light'>('algoforge-dark');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [executionResult, setExecutionResult] = useState<any>(null);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -87,6 +141,10 @@ export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
       setCode(value);
       localStorage.setItem(`code_${problemId}_${language}`, value);
     }
+  };
+
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    monaco.editor.defineTheme('algoforge-dark', ALGOFORGE_DARK_THEME);
   };
 
   /**
@@ -246,21 +304,23 @@ export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
 
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setTheme(theme === 'vs-dark' ? 'light' : 'vs-dark')}
+                onClick={() => setTheme(theme === 'algoforge-dark' ? 'light' : 'algoforge-dark')}
                 className="text-white/60 hover:text-white"
-                title="Toggle Theme"
+                aria-label="Toggle theme"
+                aria-pressed={theme === 'algoforge-dark'}
               >
-                {theme === 'vs-dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === 'algoforge-dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
           {/* Editor Area */}
-          <div className="flex-1 min-h-0 bg-[#1e1e1e]">
+          <div className="flex-1 min-h-0 bg-[#141414]">
             <Editor
               height="100%"
               language={language}
               theme={theme}
+              beforeMount={handleBeforeMount}
               value={code}
               onChange={handleEditorChange}
               options={{
