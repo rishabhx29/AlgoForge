@@ -1,10 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, LogIn, ChevronDown, Maximize2, Minimize2, Sparkles, Bot } from 'lucide-react';
+import { X, Send, LogIn, ChevronDown, Maximize2, Minimize2, Sparkles, Bot, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendChatMessage } from '@/api/chat';
 import type { ChatMessage } from '@/api/chat';
 import { useAnimatedText } from '@/components/ui/animated-text';
+
+const STORAGE_KEY = 'algobot_history';
+const MAX_MESSAGES = 20;
+
+const WELCOME_MESSAGE: ChatMessage = {
+    role: 'assistant',
+    content:
+        "Hey there! I'm **AlgoBot** — your personal DSA tutor 🤖\n\nI can:\n- 📖 **Teach** any DSA concept step-by-step\n- 🎯 **Suggest problems** from AlgoForge to practice\n- 🐛 **Help debug** your approach\n\nTry one of the quick actions below, or ask me anything!",
+};
+
+function loadHistory(): ChatMessage[] | null {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+function saveHistory(messages: ChatMessage[]) {
+    try {
+        // Skip the welcome message (index 0) — only persist conversation
+        const toStore = messages.slice(1).slice(-MAX_MESSAGES);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    } catch {
+        // Private browsing or quota exceeded — silently ignore
+    }
+}
 
 /* ─── Sparkle Star Icon (Leonardo AI style) ─── */
 function SparkleIcon({ size = 40 }: { size?: number }) {
@@ -42,13 +73,10 @@ export function AlgoBot({ onAuthClick }: { onAuthClick: (mode: 'login' | 'signup
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            role: 'assistant',
-            content:
-                "Hey there! I'm **AlgoBot** — your personal DSA tutor 🤖\n\nI can:\n- 📖 **Teach** any DSA concept step-by-step\n- 🎯 **Suggest problems** from AlgoForge to practice\n- 🐛 **Help debug** your approach\n\nTry one of the quick actions below, or ask me anything!",
-        },
-    ]);
+    const [messages, setMessages] = useState<ChatMessage[]>(() => {
+        const history = loadHistory();
+        return history ? [WELCOME_MESSAGE, ...history] : [WELCOME_MESSAGE];
+    });
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [showScrollDown, setShowScrollDown] = useState(false);
@@ -77,6 +105,17 @@ export function AlgoBot({ onAuthClick }: { onAuthClick: (mode: 'login' | 'signup
         el.addEventListener('scroll', handler);
         return () => el.removeEventListener('scroll', handler);
     }, [isOpen]);
+
+    // Persist conversation to localStorage whenever messages change
+    useEffect(() => {
+        saveHistory(messages);
+    }, [messages]);
+
+    const handleClearChat = () => {
+        try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+        setMessages([WELCOME_MESSAGE]);
+        setLatestAiIndex(0);
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -271,6 +310,16 @@ export function AlgoBot({ onAuthClick }: { onAuthClick: (mode: 'login' | 'signup
                                 </div>
                             </div>
                             <div className="flex items-center gap-0.5">
+                                {hasStartedConversation && (
+                                    <button
+                                        onClick={handleClearChat}
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                        title="Clear Chat"
+                                        aria-label="Clear chat history"
+                                    >
+                                        <Trash2 className="w-4 h-4 text-white/30 group-hover:text-red-400/70 transition-colors" />
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setIsExpanded(!isExpanded)}
                                     className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
