@@ -27,10 +27,11 @@ interface LeaderboardEntry {
 }
 
 export function Leaderboard({ onProfileClick }: LeaderboardProps) {
-  const { profile } = useAuth();
+  const { profile, token } = useAuth();
   const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
   const [category, setCategory] = useState<'xp' | 'streak' | 'solved'>('xp');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [myRank, setMyRank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +52,27 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
 
     fetchLeaderboard();
   }, [category]);
+
+  // Fetch own rank separately (always shown, even if hidden from public leaderboard)
+  useEffect(() => {
+    if (!profile) return;
+    const fetchMyRank = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE_URL}/api/users/leaderboard/me?sortBy=${category}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMyRank(data);
+        }
+      } catch {
+        // Silently ignore — own rank is best-effort
+      }
+    };
+    fetchMyRank();
+  }, [profile, category]);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-6 h-6 text-[#ffd700]" />;
@@ -265,8 +287,8 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
           ))}
         </motion.div>
 
-        {/* Current User Rank - TODO: Implement finding user rank from backend */}
-        {profile && (
+        {/* Current User Rank */}
+        {profile && myRank && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -275,14 +297,14 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
           >
             <div className="flex items-center gap-4">
               <div className="w-8 flex justify-center">
-                <span className="text-white/60 font-medium">#?</span>
+                <span className="text-[#a088ff] font-bold">#{myRank.rank}</span>
               </div>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#a088ff] to-[#63e3ff] flex items-center justify-center overflow-hidden">
-                {profile.avatar?.startsWith('http') ? (
-                  <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+                {myRank.avatar?.startsWith('http') ? (
+                  <img src={myRank.avatar} alt={myRank.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-sm font-medium text-[#141414]">
-                    {profile.name?.charAt(0).toUpperCase() || 'Y'}
+                    {myRank.avatar || profile.name?.charAt(0).toUpperCase() || 'Y'}
                   </span>
                 )}
               </div>
@@ -293,15 +315,15 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-sm">
                   <Zap className="w-4 h-4 text-[#a088ff]" />
-                  <span className="text-white/80">{profile.xp_points || 0}</span>
+                  <span className="text-white/80">{myRank.xp.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Flame className="w-4 h-4 text-[#ff8a63]" />
-                  <span className="text-white/80">{profile.streak_days || 0}</span>
+                  <span className="text-white/80">{myRank.streak}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Target className="w-4 h-4 text-[#63e3ff]" />
-                  <span className="text-white/80">{profile.solvedProblems?.length || 0}</span>
+                  <span className="text-white/80">{myRank.solved}</span>
                 </div>
               </div>
             </div>

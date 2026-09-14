@@ -15,6 +15,7 @@ model User {
   googleId       String?         @unique
   role           String          @default("user") // "user", "admin"
   isBanned       Boolean         @default(false)
+  isPublic       Boolean         @default(true)
   avatar         String?
   avatarUrl      String?
   bio            String?         @default("")

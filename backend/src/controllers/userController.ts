@@ -2,14 +2,41 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { calculateLevel } from '../config/xpConfig';
 
+// ─── In-memory leaderboard cache (60s TTL) ───
+const leaderboardCache = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_TTL_MS = 60_000;
+
+function getCachedLeaderboard(key: string) {
+    const entry = leaderboardCache.get(key);
+    if (entry && Date.now() < entry.expiresAt) return entry.data;
+    leaderboardCache.delete(key);
+    return null;
+}
+
+function setCachedLeaderboard(key: string, data: any) {
+    leaderboardCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 // @desc    Get leaderboard data
 // @route   GET /api/users/leaderboard
 // @access  Public
 export const getLeaderboard = async (req: Request, res: Response) => {
     try {
         const { limit = 10, sortBy = 'xp' } = req.query;
+        const cacheKey = `lb:${sortBy}:${limit}`;
+
+        const cached = getCachedLeaderboard(cacheKey);
+        if (cached) {
+            res.setHeader('X-Cache', 'HIT');
+            return res.status(200).json(cached);
+        }
 
         let pipeline: any[] = [];
+
+        // Filter out users who opted out of the leaderboard
+        pipeline.push({
+            $match: { isPublic: { $ne: false } }
+        });
 
         pipeline.push({
             $project: {
@@ -44,8 +71,60 @@ export const getLeaderboard = async (req: Request, res: Response) => {
             rank: index + 1
         }));
 
+        setCachedLeaderboard(cacheKey, formattedLeaderboard);
+        res.setHeader('X-Cache', 'MISS');
         res.status(200).json(formattedLeaderboard);
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get authenticated user's own rank (always shown, even if isPublic: false)
+// @route   GET /api/users/leaderboard/me
+// @access  Private
+export const getMyLeaderboardRank = async (req: Request | any, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const { sortBy = 'xp' } = req.query;
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Count how many public users rank above this user
+        const sortField = sortBy === 'solved' ? 'solvedProblems' : sortBy === 'streak' ? 'streak_days' : 'xp_points';
+
+        let rankPipeline: any[] = [
+            { $match: { isPublic: { $ne: false } } },
+        ];
+
+        if (sortBy === 'solved') {
+            rankPipeline.push({
+                $addFields: { solvedCount: { $size: { $ifNull: ["$solvedProblems", []] } } }
+            });
+            rankPipeline.push({ $match: { solvedCount: { $gt: user.solvedProblems?.length || 0 } } });
+        } else {
+            const userVal = user[sortField as keyof typeof user] as number || 0;
+            rankPipeline.push({ $match: { [sortField]: { $gt: userVal } } });
+        }
+
+        rankPipeline.push({ $count: 'above' });
+
+        const rankResult = await prisma.user.aggregateRaw({ pipeline: rankPipeline }) as unknown as any[];
+        const rank = (rankResult[0]?.above || 0) + 1;
+
+        const solvedCount = user.solvedProblems?.length || 0;
+
+        res.status(200).json({
+            id: user.id,
+            name: user.name,
+            avatar: user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'),
+            xp: user.xp_points || 0,
+            streak: user.streak_days || 0,
+            solved: solvedCount,
+            rank,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });
@@ -162,7 +241,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request | any, res: Response) => {
     try {
         const userId = req.params.userId;
-        const { bio, avatarUrl } = req.body;
+        const { bio, avatarUrl, isPublic } = req.body;
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -179,6 +258,7 @@ export const updateUserProfile = async (req: Request | any, res: Response) => {
             data: {
                 bio: bio !== undefined ? bio : user.bio,
                 avatarUrl: avatarUrl !== undefined ? avatarUrl : user.avatarUrl,
+                isPublic: isPublic !== undefined ? Boolean(isPublic) : user.isPublic,
             },
         });
 

@@ -146,23 +146,23 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
   const { data: problemsData = [], isLoading: problemsLoading } = useQuery({
     queryKey: ['problems'],
-    queryFn: getAllProblems
+    queryFn: () => getAllProblems(),
   });
 
   const { data: topicsData = [], isLoading: topicsLoading } = useQuery({
     queryKey: ['topics'],
-    queryFn: getAllTopics
+    queryFn: () => getAllTopics(),
   });
 
   const { data: userProgressData = [], isLoading: progressLoading } = useQuery({
     queryKey: ['userProgress', profile?.id],
-    queryFn: getUserProgress,
+    queryFn: () => getUserProgress(),
     enabled: !!profile,
   });
 
   const { data: dashboardStatsData, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboardStats', profile?.id],
-    queryFn: getDashboardStats,
+    queryFn: () => getDashboardStats(),
     enabled: !!profile,
   });
 

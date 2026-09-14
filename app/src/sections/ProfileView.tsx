@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Flame, Target, Edit2, Check, X, ArrowLeft, User, Award } from 'lucide-react';
+import { Zap, Flame, Target, Edit2, Check, X, ArrowLeft, User, Award, EyeOff, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -15,6 +15,7 @@ interface ProfileData {
   solved: number;
   level: number;
   memberSince: string;
+  isPublic?: boolean;
 }
 
 interface ProfileViewProps {
@@ -31,6 +32,7 @@ export function ProfileView({ userId, onBack }: ProfileViewProps) {
   const [editBio, setEditBio] = useState('');
   const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
   const isOwner = user?.id === userId;
 
@@ -49,6 +51,7 @@ export function ProfileView({ userId, onBack }: ProfileViewProps) {
           setProfile(data);
           setEditBio(data.bio || '');
           setEditAvatarUrl(data.avatar || '');
+          setIsPublic(data.isPublic !== false);
         }
       } catch (error) {
         console.error('Failed to fetch profile', error);
@@ -90,6 +93,26 @@ export function ProfileView({ userId, onBack }: ProfileViewProps) {
     setEditBio(profile?.bio || '');
     setEditAvatarUrl(profile?.avatar || '');
     setIsEditing(false);
+  };
+
+  const handleTogglePrivacy = async () => {
+    if (!profile) return;
+    const newValue = !isPublic;
+    setIsPublic(newValue);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_BASE_URL}/api/users/${userId}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isPublic: newValue }),
+      });
+    } catch {
+      // Revert on error
+      setIsPublic(!newValue);
+    }
   };
 
   if (loading) {
@@ -216,6 +239,42 @@ export function ProfileView({ userId, onBack }: ProfileViewProps) {
             </div>
           </div>
         </motion.div>
+
+        {/* Privacy Toggle (owner only) */}
+        {isOwner && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6"
+          >
+            <button
+              onClick={handleTogglePrivacy}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {isPublic ? (
+                  <Eye className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <EyeOff className="w-4 h-4 text-white/40" />
+                )}
+                <div className="text-left">
+                  <p className="text-white text-sm font-medium">Leaderboard Visibility</p>
+                  <p className="text-white/40 text-xs">
+                    {isPublic ? 'Your profile is visible on the public leaderboard' : 'Your profile is hidden from the public leaderboard'}
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`relative w-10 h-6 rounded-full transition-colors ${isPublic ? 'bg-emerald-500/30' : 'bg-white/10'}`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 rounded-full transition-all ${isPublic ? 'left-5 bg-emerald-400' : 'left-1 bg-white/40'}`}
+                />
+              </div>
+            </button>
+          </motion.div>
+        )}
 
         {/* Stats */}
         <motion.div
