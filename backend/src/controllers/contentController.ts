@@ -135,21 +135,38 @@ export const getProblemsByTopic = async (req: Request, res: Response) => {
 };
 
 /**
- * @desc    Get all problems
- * @route   GET /api/content/problems
+ * @desc    Get all problems (paginated)
+ * @route   GET /api/content/problems?page=1&limit=20
  * @access  Public
  *
- * Fetches every problem in the system, ordered by display index.
+ * Fetches a page of problems ordered by display index. Returns total count
+ * and page metadata so the frontend can render a "Load More" button.
  *
- * @param req - Express request object.
- * @param res - Express response. Returns a JSON array of all problem objects.
+ * @param req - Express request. Accepts optional `page` and `limit` query params.
+ * @param res - Express response. Returns `{ problems, total, page, limit, totalPages }`.
  */
 export const getAllProblems = async (req: Request, res: Response) => {
     try {
-        const problems = await prisma.problem.findMany({
-            orderBy: { order_index: 'asc' }
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+        const skip = (page - 1) * limit;
+
+        const [problems, total] = await Promise.all([
+            prisma.problem.findMany({
+                orderBy: { order_index: 'asc' },
+                skip,
+                take: limit
+            }),
+            prisma.problem.count()
+        ]);
+
+        res.json({
+            problems,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         });
-        res.json(problems);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

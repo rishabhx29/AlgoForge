@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -15,7 +15,8 @@ import {
   ChevronDown,
   X,
   Save,
-  Code2
+  Code2,
+  Loader2
 } from 'lucide-react';
 import { getAllProblems, getAllTopics } from '@/api/content';
 import { updateProblemStatus, toggleBookmark as apiToggleBookmark, getUserProgress, updateNotes } from '@/api/userActions';
@@ -24,28 +25,39 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { SOLVE_XP } from '@/utils/xpConfig';
 
+const PAGE_SIZE = 20;
+
 export function Problems() {
-  const { data: problemsData = [], isLoading: problemsLoading } = useQuery({
+  // Kept for parity with upstream; replaced by manual pagination below.
+  // The result is intentionally unused — `void` discards the value without
+  // triggering `noUnusedLocals` or `noUnusedParameters` (tsc).
+  void useQuery({
     queryKey: ['problems'],
-    queryFn: getAllProblems
+    queryFn: () => getAllProblems(),
   });
 
   const { data: topicsData = [], isLoading: topicsLoading } = useQuery({
     queryKey: ['topics'],
-    queryFn: getAllTopics
+    queryFn: () => getAllTopics(),
   });
 
   const { user, refreshProfile } = useAuth();
 
   const { data: userProgressData } = useQuery({
     queryKey: ['userProgress', user?.id],
-    queryFn: getUserProgress,
+    queryFn: () => getUserProgress(),
     enabled: !!user,
   });
 
-  const allProblems = problemsData;
+  const [allProblems, setAllProblems] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalProblems, setTotalProblems] = useState(0);
+  const [loadingProblems, setLoadingProblems] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const topics = topicsData;
-  const filtersLoading = problemsLoading || topicsLoading;
+  const filtersLoading = topicsLoading || loadingProblems;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'Easy' | 'Medium' | 'Hard'>('all');
@@ -58,6 +70,35 @@ export function Problems() {
   const [noteContent, setNoteContent] = useState('');
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState(false);
+
+  const fetchProblems = useCallback(async (pageNum: number, append: boolean = false) => {
+    if (append) setLoadingMore(true);
+    else setLoadingProblems(true);
+    try {
+      const data = await getAllProblems(pageNum, PAGE_SIZE);
+      setAllProblems(prev => append ? [...prev, ...data.problems] : data.problems);
+      setTotalProblems(data.total);
+      setHasMore(pageNum < data.totalPages);
+    } catch {
+      if (!append) setAllProblems([]);
+    } finally {
+      if (append) setLoadingMore(false);
+      else setLoadingProblems(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+    setAllProblems([]);
+    setHasMore(true);
+    fetchProblems(1, false);
+  }, [fetchProblems]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProblems(nextPage, true);
+  };
 
   useEffect(() => {
     if (userProgressData) {
@@ -73,7 +114,7 @@ export function Problems() {
           notesData[p.problem_id] = p.notes;
         }
       });
-      
+
       setCompletedProblems(completed);
       setBookmarkedProblems(bookmarked);
       setNotesMap(notesData);
@@ -195,7 +236,7 @@ export function Problems() {
             Problem <span className="gradient-text">Library</span>
           </h1>
           <p className="text-white/60">
-            Browse and practice from our collection of {stats.total}+ problems
+            Browse and practice from our collection of {totalProblems}+ problems
           </p>
         </motion.div>
 
@@ -303,7 +344,7 @@ export function Problems() {
         {/* Results Count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-white/60 text-sm">
-            Showing {filteredProblems.length} of {allProblems.length} problems
+            Showing {filteredProblems.length} of {totalProblems} problems
           </p>
           <div className="flex items-center gap-2 text-sm text-white/40">
             <CheckCircle2 className="w-4 h-4" />
@@ -431,6 +472,24 @@ export function Problems() {
             );
           })}
         </motion.div>
+
+        {/* Load More */}
+        {hasMore && filteredProblems.length > 0 && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="px-6 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingMore ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </span>
+              ) : 'Load More'}
+            </button>
+          </div>
+        )}
 
         {filteredProblems.length === 0 && (
           <div className="text-center py-16">

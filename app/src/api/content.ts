@@ -45,13 +45,8 @@ export const getProblemsByTopic = async (topicId: string) => {
     return response.data;
 };
 
-/**
- * Fetches every problem in the system, ordered by index.
- *
- * @returns A promise resolving to an array of all problem objects.
- */
-export const getAllProblems = async () => {
-    const response = await axios.get(`${API_BASE_URL}/api/content/problems`);
+export const getAllProblems = async (page: number = 1, limit: number = 20) => {
+    const response = await axios.get(`${API_BASE_URL}/api/content/problems?page=${page}&limit=${limit}`);
     return response.data;
 };
 
