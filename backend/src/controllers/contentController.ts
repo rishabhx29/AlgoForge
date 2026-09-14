@@ -135,21 +135,49 @@ export const getProblemsByTopic = async (req: Request, res: Response) => {
 };
 
 /**
- * @desc    Get all problems
- * @route   GET /api/content/problems
+ * @desc    Get all problems (optionally paginated)
+ * @route   GET /api/content/problems?page=1&limit=20
  * @access  Public
  *
- * Fetches every problem in the system, ordered by display index.
+ * When called without query params, returns a plain JSON array (backward compat).
+ * When called with `page` and/or `limit`, returns paginated response with metadata.
  *
- * @param req - Express request object.
- * @param res - Express response. Returns a JSON array of all problem objects.
+ * @param req - Express request. Accepts optional `page` and `limit` query params.
+ * @param res - Express response. Returns an array or paginated object.
  */
 export const getAllProblems = async (req: Request, res: Response) => {
     try {
-        const problems = await prisma.problem.findMany({
-            orderBy: { order_index: 'asc' }
+        const pageParam = req.query.page as string;
+        const limitParam = req.query.limit as string;
+
+        // No pagination params → return all (backward compat for Notes, Dashboard, etc.)
+        if (!pageParam && !limitParam) {
+            const problems = await prisma.problem.findMany({
+                orderBy: { order_index: 'asc' }
+            });
+            return res.json(problems);
+        }
+
+        const page = Math.max(1, parseInt(pageParam) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(limitParam) || 20));
+        const skip = (page - 1) * limit;
+
+        const [problems, total] = await Promise.all([
+            prisma.problem.findMany({
+                orderBy: { order_index: 'asc' },
+                skip,
+                take: limit
+            }),
+            prisma.problem.count()
+        ]);
+
+        res.json({
+            problems,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         });
-        res.json(problems);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

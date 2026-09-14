@@ -9,12 +9,17 @@ import {
   X,
   FileText,
   Clock,
-  BookOpen
+  BookOpen,
+  Eye,
+  Code2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { getUserProgress, updateNotes } from '@/api/userActions';
 import { getAllProblems } from '@/api/content';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Highlight, themes } from 'prism-react-renderer';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -42,6 +47,7 @@ export function Notes() {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState({ content: '' });
+  const [isPreview, setIsPreview] = useState(false);
   
   interface Problem {
     id: string;
@@ -106,6 +112,7 @@ export function Notes() {
   const handleCreate = () => {
     setIsCreating(true);
     setIsEditing(true);
+    setIsPreview(false);
     setSelectedNote(null);
     setEditForm({ content: '' });
     setNewNoteProblemId('');
@@ -116,6 +123,7 @@ export function Notes() {
     setSelectedNote(note);
     setIsEditing(true);
     setIsCreating(false);
+    setIsPreview(false);
     setEditForm({ content: note.content });
   };
 
@@ -326,6 +334,16 @@ export function Notes() {
                   </h3>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => setIsPreview(!isPreview)}
+                      className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm transition-colors ${isPreview
+                          ? 'bg-[#a088ff]/20 text-[#a088ff]'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                      {isPreview ? <Code2 className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {isPreview ? 'Edit' : 'Preview'}
+                    </button>
+                    <button
                       onClick={handleCancel}
                       className="px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                     >
@@ -388,15 +406,68 @@ export function Notes() {
                     </div>
                   )}
 
-                  <div>
-                    <label className="text-sm text-white/60 mb-1 block">Notes</label>
-                    <textarea
-                      value={editForm.content}
-                      onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                      placeholder="Write your notes here... Key insights, approach, time complexity, etc."
-                      rows={15}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#a088ff] resize-none font-mono text-sm"
-                    />
+                  <div className="lg:grid lg:grid-cols-2 lg:gap-4">
+                    {/* Editor */}
+                    <div className={!isPreview ? '' : 'hidden lg:block'}>
+                      <label className="text-sm text-white/60 mb-1 block">Notes</label>
+                      <textarea
+                        value={editForm.content}
+                        onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                        placeholder="Write your notes here... Supports **markdown** formatting"
+                        rows={15}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#a088ff] resize-none font-mono text-sm"
+                      />
+                    </div>
+
+                    {/* Preview */}
+                    <div className={isPreview ? '' : 'hidden lg:block'}>
+                      <label className="text-sm text-white/60 mb-1 block">Preview</label>
+                      <div className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 min-h-[39rem] overflow-y-auto">
+                        {editForm.content ? (
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                code({ className, children, ...props }) {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  const codeString = String(children).replace(/\n$/, '');
+                                  if (match) {
+                                    return (
+                                      <Highlight
+                                        theme={themes.nightOwl}
+                                        code={codeString}
+                                        language={match[1]}
+                                      >
+                                        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                                          <pre className={className} style={{ ...style, background: 'transparent', padding: '1rem', overflowX: 'auto' }}>
+                                            {tokens.map((line, i) => (
+                                              <div key={i} {...getLineProps({ line })}>
+                                                {line.map((token, key) => (
+                                                  <span key={key} {...getTokenProps({ token })} />
+                                                ))}
+                                              </div>
+                                            ))}
+                                          </pre>
+                                        )}
+                                      </Highlight>
+                                    );
+                                  }
+                                  return (
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                }
+                              }}
+                            >
+                              {editForm.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-white/30 text-sm italic">Nothing to preview</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -428,10 +499,44 @@ export function Notes() {
                   </div>
                 </div>
 
-                <div className="prose prose-invert max-w-none">
-                  <div className="markdown-content text-white/80 whitespace-pre-wrap">
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const codeString = String(children).replace(/\n$/, '');
+                        if (match) {
+                          return (
+                            <Highlight
+                              theme={themes.nightOwl}
+                              code={codeString}
+                              language={match[1]}
+                            >
+                              {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                                <pre className={className} style={{ ...style, background: 'transparent', padding: '1rem', overflowX: 'auto' }}>
+                                  {tokens.map((line, i) => (
+                                    <div key={i} {...getLineProps({ line })}>
+                                      {line.map((token, key) => (
+                                        <span key={key} {...getTokenProps({ token })} />
+                                      ))}
+                                    </div>
+                                  ))}
+                                </pre>
+                              )}
+                            </Highlight>
+                          );
+                        }
+                        return (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                    }}
+                  >
                     {selectedNote.content}
-                  </div>
+                  </ReactMarkdown>
                 </div>
               </div>
             ) : (

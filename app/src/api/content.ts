@@ -47,11 +47,16 @@ export const getProblemsByTopic = async (topicId: string) => {
 
 /**
  * Fetches every problem in the system, ordered by index.
+ * When page/limit are provided, returns paginated response.
  *
- * @returns A promise resolving to an array of all problem objects.
+ * @returns A promise resolving to an array of all problem objects, or a paginated object.
  */
-export const getAllProblems = async () => {
-    const response = await axios.get(`${API_BASE_URL}/api/content/problems`);
+export const getAllProblems = async (page?: number, limit?: number) => {
+    const params = new URLSearchParams();
+    if (page) params.set('page', String(page));
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString();
+    const response = await axios.get(`${API_BASE_URL}/api/content/problems${qs ? `?${qs}` : ''}`);
     return response.data;
 };
 
