@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c1822">
+  <meta name="description" content="Questline: a static AlgoForge dashboard concept exploring a recommended DSA learning sequence.">
+  <title>Questline · AlgoForge dashboard concept</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1c1822;
+      --panel: #292330;
+      --text: #f2ebf4;
+      --secondary: #bdb0c7;
+      --gold: #d9ba79;
+      --line: #463c50;
+      --earned-surface: #322c30;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 'Manrope', sans-serif; }
+    button { font: inherit; }
+    svg { display: block; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { text-wrap: balance; }
+    .shell { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; }
+    .topbar { min-height: 82px; display: flex; align-items: center; gap: 62px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; gap: 12px; align-items: center; font-size: 23px; font-weight: 800; letter-spacing: -.8px; }
+    .brand svg { width: 34px; height: 38px; color: var(--gold); }
+    .navigation { display: flex; gap: 32px; align-self: stretch; align-items: center; color: var(--secondary); font-size: 14px; font-weight: 600; }
+    .nav-item { height: 100%; display: flex; align-items: center; position: relative; }
+    .nav-item.active { color: var(--text); }
+    .nav-item.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--gold); }
+    .concept-label { margin-left: auto; color: var(--secondary); font-size: 12px; text-align: right; }
+    .concept-label strong { color: var(--gold); font-weight: 600; }
+    .learner-strip { min-height: 67px; display: flex; align-items: center; gap: 24px; border-bottom: 1px solid var(--line); }
+    .learner { display: flex; align-items: center; gap: 11px; }
+    .avatar { width: 31px; height: 31px; background: var(--panel); color: var(--gold); display: grid; place-items: center; font-size: 13px; font-weight: 700; border-radius: 50%; }
+    .learner strong { font-weight: 700; }
+    .level { font-size: 12px; color: var(--secondary); padding-left: 12px; border-left: 1px solid var(--line); }
+    .stat { color: var(--secondary); white-space: nowrap; font-size: 13px; }
+    .stat b { color: var(--text); font-weight: 700; margin-right: 4px; }
+    .xp { display: flex; align-items: center; gap: 9px; }
+    .xp-mark { color: var(--gold); font-size: 18px; }
+    .weekly { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .week-bars { display: flex; gap: 4px; align-items: flex-end; height: 21px; }
+    .week-bars i { width: 5px; background: var(--gold); border-radius: 1px; }
+    .page-heading { padding: 24px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+    h1 { font-size: 30px; font-weight: 600; line-height: 1.25; letter-spacing: -.9px; margin-bottom: 7px; }
+    .page-heading p { color: var(--secondary); font-size: 14px; }
+    .path-label { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--secondary); padding-bottom: 4px; white-space: nowrap; }
+    .path-label svg { color: var(--gold); width: 18px; height: 18px; }
+    .journey { display: grid; grid-template-columns: minmax(0, 1.95fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+    .tree-panel { min-width: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .tree-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 26px 0; gap: 16px; }
+    .tree-header h2 { font-size: 16px; font-weight: 700; }
+    .tree-header span { color: var(--secondary); font-size: 12px; }
+    .tree-canvas { padding: 8px 22px 0; }
+    .tree-svg { width: 100%; height: auto; overflow: visible; font-family: 'Manrope', sans-serif; }
+    .tree-svg text { fill: var(--text); }
+    .tree-svg .muted { fill: var(--secondary); }
+    .tree-svg .gold { fill: var(--gold); }
+    .tree-svg .column-label { font-size: 14px; font-weight: 500; fill: var(--secondary); }
+    .tree-svg .node-name { font-size: 18px; font-weight: 700; }
+    .tree-svg .node-meta { font-size: 14px; }
+    .tree-svg .node-state { font-size: 13px; font-weight: 600; }
+    .tree-svg .node-body { fill: var(--panel); stroke: var(--line); }
+    .tree-svg .node-complete { fill: var(--earned-surface); stroke: #8b7857; }
+    .tree-svg .node-selected { fill: #342d38; stroke: var(--gold); stroke-width: 2; }
+    .tree-svg .node-later { fill: var(--bg); stroke: #615369; stroke-dasharray: 4 4; }
+    .tree-svg .connector { fill: none; stroke: #776781; stroke-width: 1.5; }
+    .tree-svg .connector.earned { stroke: var(--gold); stroke-width: 2; }
+    .tree-svg .connector.later { stroke-dasharray: 4 5; }
+    .tree-svg .symbol { fill: none; stroke: var(--secondary); stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter; }
+    .tree-svg .symbol.earned { stroke: var(--gold); }
+    .tree-svg .micro { font-size: 14px; }
+    .mobile-tree { display: none; }
+    .tree-footer { margin: 0 26px; border-top: 1px solid var(--line); padding: 15px 0 17px; display: flex; align-items: center; justify-content: space-between; gap: 14px; color: var(--secondary); font-size: 12px; }
+    .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+    .legend span { display: flex; align-items: center; gap: 7px; }
+    .legend-mark { width: 8px; height: 8px; display: inline-block; }
+    .legend-mark.complete { background: var(--gold); }
+    .legend-mark.current { border: 1px solid var(--gold); transform: rotate(45deg); }
+    .legend-mark.later { border: 1px solid var(--secondary); }
+    .chapter-panel { padding: 28px 30px; border-radius: 12px; background: var(--panel); display: flex; flex-direction: column; }
+    .chapter-top { display: flex; align-items: center; justify-content: space-between; color: var(--gold); font-size: 12px; font-weight: 600; }
+    .chapter-top .chapter-number { color: var(--secondary); }
+    .chapter-title { font-family: 'Fraunces', Georgia, serif; font-size: 43px; font-weight: 500; line-height: 1.2; letter-spacing: -1px; margin-top: 18px; }
+    .chapter-description { color: var(--secondary); font-size: 13px; line-height: 1.8; margin-top: 10px; max-width: 48ch; }
+    .chapter-progress { margin-top: 22px; }
+    .progress-label { display: flex; justify-content: space-between; color: var(--secondary); font-size: 12px; }
+    .progress-label strong { color: var(--text); font-weight: 600; }
+    .progress-track { display: flex; gap: 5px; height: 4px; margin-top: 11px; }
+    .progress-track i { flex: 1; background: #514459; }
+    .progress-track i.done { background: var(--gold); }
+    .next-task { margin-top: 24px; padding-top: 20px; border-top: 1px solid #504459; }
+    .task-kicker { color: var(--secondary); font-size: 12px; margin-bottom: 9px; }
+    .next-task h3 { font-size: 18px; font-weight: 600; line-height: 1.5; max-width: 32ch; }
+    .task-meta { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 12px; }
+    .difficulty { color: #e5c996; background: #453b32; padding: 2px 9px; border-radius: 4px; }
+    .reward-xp { color: var(--secondary); }
+    .inspect { margin-top: 23px; min-height: 46px; width: 100%; border: 0; border-radius: 6px; padding: 11px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--gold); color: var(--bg); font-weight: 800; font-size: 13px; cursor: pointer; }
+    .inspect svg { width: 19px; height: 19px; }
+    .inspect:hover { background: #ebce96; }
+    .inspect:active { background: #c9a65e; }
+    button:focus-visible { outline: 3px solid var(--text); outline-offset: 4px; }
+    .lower { display: grid; grid-template-columns: minmax(0, 1.95fr) minmax(0, 1fr); gap: 24px; margin-top: 28px; }
+    .recent { padding: 0 2px; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+    .section-heading h2 { font-size: 15px; font-weight: 700; }
+    .section-heading span { color: var(--secondary); font-size: 12px; }
+    .problem { display: flex; align-items: center; gap: 14px; min-height: 54px; border-top: 1px solid var(--line); }
+    .problem-check { width: 25px; height: 25px; color: var(--gold); flex-shrink: 0; }
+    .problem-title { font-weight: 600; font-size: 13px; }
+    .problem-topic { font-size: 12px; color: var(--secondary); margin-left: auto; }
+    .problem-status { font-size: 12px; color: var(--secondary); min-width: 80px; text-align: right; }
+    .milestone { display: flex; align-items: center; gap: 20px; border-top: 1px solid var(--line); padding: 19px 4px 0; }
+    .badge { width: 76px; height: 88px; flex-shrink: 0; }
+    .milestone-label { font-size: 12px; color: var(--secondary); }
+    .milestone h2 { font-size: 18px; font-weight: 600; margin: 3px 0; }
+    .milestone p { font-size: 12px; color: var(--secondary); max-width: 30ch; }
+    .milestone strong { font-weight: 500; color: var(--gold); }
+    .page-footer { display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); margin-top: 27px; padding: 17px 0 24px; color: var(--secondary); font-size: 11px; }
+    dialog { width: min(520px, calc(100% - 40px)); padding: 30px; color: var(--text); background: var(--panel); border: 1px solid var(--gold); border-radius: 12px; max-height: calc(100dvh - 48px); overflow: auto; }
+    dialog::backdrop { background: rgb(13 10 17 / 80%); }
+    dialog h2 { font-size: 24px; font-weight: 600; margin-bottom: 14px; }
+    dialog p, dialog li { color: var(--secondary); font-size: 14px; }
+    dialog ul { padding-left: 20px; margin: 18px 0; }
+    dialog li + li { margin-top: 10px; }
+    dialog strong { color: var(--text); font-weight: 600; }
+    .dialog-close { margin-top: 24px; border: 1px solid var(--secondary); color: var(--text); background: transparent; border-radius: 5px; padding: 10px 19px; cursor: pointer; min-height: 44px; }
+    .dialog-close:hover { background: #3b3244; border-color: var(--text); }
+    .dialog-close:active { background: #4b4056; }
+    @media (min-width: 1241px) {
+      .tree-panel { display: flex; flex-direction: column; }
+      .tree-canvas { flex: 1; display: flex; align-items: center; }
+      .tree-svg { max-height: 400px; }
+    }
+    @media (max-width: 1240px) {
+      .topbar { gap: 35px; }
+      .navigation { gap: 24px; }
+      .concept-label { max-width: 185px; }
+      .learner-strip { gap: 20px; }
+      .journey { grid-template-columns: minmax(0, 1fr); }
+      .chapter-panel { display: grid; grid-template-columns: 1fr 1fr; column-gap: 36px; }
+      .chapter-top, .chapter-title, .chapter-description, .chapter-progress { grid-column: 1; }
+      .next-task { grid-column: 2; grid-row: 1 / 5; margin: 0; padding: 0; border: 0; align-self: center; }
+      .inspect { grid-column: 2; grid-row: 5; align-self: end; }
+      .chapter-progress { grid-row: 5; }
+      .tree-canvas { padding: 12px 26px; }
+    }
+    @media (min-width: 701px) and (max-width: 850px) {
+      .shell { width: calc(100% - 40px); }
+      .tree-canvas { padding-left: 8px; padding-right: 8px; }
+      .tree-svg .node-state { font-size: 16px; }
+      .tree-svg .node-meta, .tree-svg .column-label, .tree-svg .micro { font-size: 16px; }
+      .concept-label { display: none; }
+      .learner-strip { gap: 15px; flex-wrap: wrap; padding: 15px 0; }
+      .weekly { margin-left: 0; }
+    }
+    @media (max-width: 700px) {
+      .shell { width: calc(100% - 40px); }
+      .topbar { min-height: 114px; padding-top: 17px; flex-wrap: wrap; column-gap: 12px; row-gap: 13px; }
+      .brand { font-size: 21px; }
+      .brand svg { width: 27px; height: 31px; }
+      .concept-label { display: block; font-size: 10px; max-width: 125px; }
+      .navigation { order: 3; width: 100%; gap: 25px; font-size: 12px; min-height: 41px; }
+      .learner-strip { flex-wrap: wrap; gap: 11px 20px; padding: 17px 0; }
+      .learner { width: 100%; }
+      .level { margin-left: auto; }
+      .weekly { margin-left: 0; gap: 9px; }
+      .stat { font-size: 12px; }
+      .week-bars { height: 17px; gap: 3px; }
+      .week-bars i { width: 3px; }
+      .page-heading { padding: 25px 0 21px; display: block; }
+      h1 { font-size: 26px; }
+      .page-heading p { font-size: 13px; max-width: 35ch; }
+      .path-label { margin-top: 15px; }
+      .journey, .lower { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+      .tree-header { padding: 20px 18px 0; align-items: flex-start; }
+      .tree-header h2 { font-size: 15px; }
+      .tree-header span { font-size: 12px; max-width: 110px; text-align: right; }
+      .tree-canvas { padding: 4px 12px 0; }
+      .desktop-tree { display: none; }
+      .mobile-tree { display: block; max-width: 360px; margin: 0 auto; }
+      .mobile-tree .node-state, .mobile-tree .node-meta { font-size: 15px; }
+      .mobile-tree .node-name { font-size: 20px; }
+      .tree-footer { margin: 0 18px; flex-wrap: wrap; }
+      .legend { gap: 14px; }
+      .chapter-panel { display: flex; padding: 25px; }
+      .chapter-title { font-size: 40px; }
+      .chapter-progress { width: 100%; }
+      .next-task { width: 100%; border-top: 1px solid #504459; padding-top: 20px; margin-top: 25px; }
+      .inspect { align-self: stretch; }
+      .lower { margin-top: 26px; }
+      .problem { gap: 10px; }
+      .problem-topic { display: none; }
+      .problem-status { margin-left: auto; }
+      .milestone { padding-top: 22px; }
+      .page-footer { flex-direction: column; gap: 5px; font-size: 11px; margin-top: 27px; }
+    }
+    @media (max-width: 360px) {
+      .shell { width: calc(100% - 32px); }
+      .navigation { gap: 20px; }
+      .tree-header { padding-left: 13px; padding-right: 13px; }
+      .concept-label { max-width: 105px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 36 40" fill="none" aria-hidden="true"><path d="M18 3 33 12v16L18 37 3 28V12Z" stroke="currentColor" stroke-width="1.5"/><path d="m10 26 8-15 8 15M13 21h10M18 3v5M3 28l5-3M33 28l-5-3" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>AlgoForge</span>
+      </div>
+      <nav class="navigation" aria-label="Static concept navigation; these labels are not links">
+        <span class="nav-item active" aria-current="page">Journey</span>
+        <span class="nav-item">Problems</span>
+        <span class="nav-item">Notes</span>
+        <span class="nav-item">Community</span>
+      </nav>
+      <p class="concept-label"><strong>Questline</strong> · Dashboard concept · Sample data</p>
+    </header>
+
+    <section class="learner-strip" aria-label="Sample learner progress">
+      <div class="learner"><span class="avatar" aria-hidden="true">R</span><strong>Rishabh</strong><span class="level">Level 2</span></div>
+      <span class="stat"><b>47</b> solved</span>
+      <span class="stat xp"><span class="xp-mark" aria-hidden="true">◇</span><span><b>1,175</b> XP</span></span>
+      <span class="stat"><b>7 day</b> streak</span>
+      <div class="weekly">
+        <div class="week-bars" aria-hidden="true"><i style="height:9px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:18px"></i><i style="height:12px"></i><i style="height:21px"></i><i style="height:15px"></i></div>
+        <span class="stat"><b>14</b> solves this week</span>
+      </div>
+    </section>
+
+    <main>
+      <div class="page-heading">
+        <div><h1>Every pattern opens a path.</h1><p>Build on what you know. Make your next problem count.</p></div>
+        <span class="path-label"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 15V5h5v10h9M8 9h9M14 6l3 3-3 3" stroke="currentColor" stroke-width="1.4"/></svg>Your DSA learning path</span>
+      </div>
+
+      <div class="journey">
+        <section class="tree-panel" aria-labelledby="tree-title">
+          <div class="tree-header"><h2 id="tree-title">The skill tree</h2><span>Illustrative learning sequence</span></div>
+          <div class="tree-canvas">
+            <svg class="tree-svg desktop-tree" viewBox="0 0 800 410" role="img" aria-labelledby="desktop-tree-title desktop-tree-desc">
+              <title id="desktop-tree-title">A recommended DSA learning sequence</title>
+              <desc id="desktop-tree-desc">Arrays, completed at 12 of 12, branches to Hash maps, in progress at 8 of 12, and Two pointers, the current chapter at 3 of 8. Two pointers leads to Sliding window, a later chapter. These paths suggest a learning order, not formal prerequisites or working unlock rules.</desc>
+              <text class="column-label" x="24" y="30">Foundation</text>
+              <text class="column-label" x="296" y="30">Explore a pattern</text>
+              <text class="column-label" x="573" y="30">Build on it</text>
+              <path class="connector earned" d="M229 212H245Q263 212 263 194V140Q263 122 281 122H296"/>
+              <path class="connector earned" d="M229 212H245Q263 212 263 230V284Q263 302 281 302H296"/>
+              <path class="connector later" d="M501 302H573"/>
+              <circle cx="263" cy="212" r="4" fill="#d9ba79"/>
+              <path d="m566 297 7 5-7 5" fill="none" stroke="#bdb0c7" stroke-width="1.5"/>
+              <g transform="translate(24 156)">
+                <rect class="node-body node-complete" width="205" height="112" rx="7"/>
+                <g class="symbol earned" transform="translate(17 17)"><rect width="7" height="16"/><rect x="11" width="7" height="16"/><rect x="22" width="7" height="16"/></g>
+                <text class="node-state gold" x="188" y="30" text-anchor="end">Completed</text>
+                <text class="node-name" x="17" y="62">Arrays</text>
+                <text class="node-meta muted" x="17" y="88">12 / 12 solved</text>
+                <path d="m171 82 5 5 11-12" class="symbol earned"/>
+                <path d="M8 111H197" stroke="#d9ba79" stroke-width="2"/>
+              </g>
+              <g transform="translate(296 66)">
+                <rect class="node-body" width="205" height="112" rx="7"/>
+                <g class="symbol" transform="translate(19 17)"><path d="M6 0 3 20M17 0l-3 20M0 7h22M0 14h22"/></g>
+                <text class="node-state muted" x="188" y="30" text-anchor="end">In progress</text>
+                <text class="node-name" x="17" y="62">Hash maps</text>
+                <text class="node-meta muted" x="17" y="88">8 / 12 solved</text>
+                <path d="M8 111H135" stroke="#bdb0c7" stroke-width="2"/>
+              </g>
+              <g transform="translate(296 246)">
+                <rect class="node-body node-selected" width="205" height="112" rx="7"/>
+                <g class="symbol earned" transform="translate(17 19)"><path d="M0 8h12M6 2l6 6-6 6M32 8H20M26 2l-6 6 6 6"/></g>
+                <text class="node-state gold" x="188" y="30" text-anchor="end">Current</text>
+                <text class="node-name" x="17" y="62">Two pointers</text>
+                <text class="node-meta muted" x="17" y="88">3 / 8 solved</text>
+                <path d="M8 111H78" stroke="#d9ba79" stroke-width="3"/>
+              </g>
+              <g transform="translate(573 246)">
+                <rect class="node-body node-later" width="205" height="112" rx="7"/>
+                <g class="symbol" transform="translate(18 18)"><path d="M0 3h30v15H0zM8 0v21M22 0v21"/></g>
+                <text class="node-state muted" x="188" y="30" text-anchor="end">Later</text>
+                <text class="node-name" x="17" y="62">Sliding window</text>
+                <text class="node-meta muted" x="17" y="88">Upcoming chapter</text>
+              </g>
+              <g transform="translate(576 94)">
+                <path d="M0 0v31h26" fill="none" stroke="#615369" stroke-width="1.5"/>
+                <text class="micro muted" x="0" y="63">One foundation.</text>
+                <text class="micro muted" x="0" y="84">Different ways to think.</text>
+              </g>
+              <text class="micro gold" x="296" y="388">You are here</text>
+              <path d="M404 384h29" stroke="#d9ba79"/>
+              <text class="micro muted" x="24" y="388">Start with the essentials</text>
+            </svg>
+
+            <svg class="tree-svg mobile-tree" viewBox="0 0 320 744" role="img" aria-labelledby="mobile-tree-title mobile-tree-desc">
+              <title id="mobile-tree-title">Your recommended DSA learning sequence</title>
+              <desc id="mobile-tree-desc">Arrays is completed, 12 of 12. Arrays branches to Hash maps, 8 of 12 in progress, and Two pointers, current at 3 of 8. Two pointers leads to Sliding window, later. Illustrative learning order, not formal prerequisites.</desc>
+              <path class="connector earned" d="M62 82H40Q23 82 23 100V447Q23 462 40 462H62"/>
+              <path class="connector earned" d="M23 272H62"/>
+              <circle cx="23" cy="272" r="4" fill="#d9ba79"/>
+              <path class="connector later" d="M181 520V594"/>
+              <path d="m176 587 5 7 5-7" fill="none" stroke="#bdb0c7" stroke-width="1.5"/>
+              <g transform="translate(62 24)">
+                <rect class="node-body node-complete" width="238" height="116" rx="7"/>
+                <g class="symbol earned" transform="translate(18 17)"><rect width="7" height="16"/><rect x="11" width="7" height="16"/><rect x="22" width="7" height="16"/></g>
+                <text class="node-state gold" x="220" y="31" text-anchor="end">Completed</text>
+                <text class="node-name" x="18" y="65">Arrays</text>
+                <text class="node-meta muted" x="18" y="94">12 / 12 solved</text>
+                <path d="m204 84 5 5 11-12" class="symbol earned"/>
+                <path d="M8 115H230" stroke="#d9ba79" stroke-width="2"/>
+              </g>
+              <g transform="translate(62 214)">
+                <rect class="node-body" width="238" height="116" rx="7"/>
+                <path d="m88 213" fill="none"/>
+                <g class="symbol" transform="translate(20 17)"><path d="M6 0 3 20M17 0l-3 20M0 7h22M0 14h22"/></g>
+                <text class="node-state muted" x="220" y="31" text-anchor="end">In progress</text>
+                <text class="node-name" x="18" y="65">Hash maps</text>
+                <text class="node-meta muted" x="18" y="94">8 / 12 solved</text>
+                <path d="M8 115H157" stroke="#bdb0c7" stroke-width="2"/>
+              </g>
+              <g transform="translate(62 404)">
+                <rect class="node-body node-selected" width="238" height="116" rx="7"/>
+                <g class="symbol earned" transform="translate(18 19)"><path d="M0 8h12M6 2l6 6-6 6M32 8H20M26 2l-6 6 6 6"/></g>
+                <text class="node-state gold" x="220" y="31" text-anchor="end">Current</text>
+                <text class="node-name" x="18" y="65">Two pointers</text>
+                <text class="node-meta muted" x="18" y="94">3 / 8 solved</text>
+                <path d="M8 115H91" stroke="#d9ba79" stroke-width="3"/>
+              </g>
+              <g transform="translate(62 594)">
+                <rect class="node-body node-later" width="238" height="116" rx="7"/>
+                <g class="symbol" transform="translate(19 18)"><path d="M0 3h30v15H0zM8 0v21M22 0v21"/></g>
+                <text class="node-state muted" x="220" y="31" text-anchor="end">Later</text>
+                <text class="node-name" x="18" y="65">Sliding window</text>
+                <text class="node-meta muted" x="18" y="94">Upcoming chapter</text>
+              </g>
+            </svg>
+          </div>
+          <div class="tree-footer">
+            <div class="legend" aria-label="Skill states"><span><i class="legend-mark complete" aria-hidden="true"></i>Completed</span><span><i class="legend-mark current" aria-hidden="true"></i>Current</span><span><i class="legend-mark later" aria-hidden="true"></i>Later</span></div>
+            <span>Recommended order, not prerequisites</span>
+          </div>
+        </section>
+
+        <aside class="chapter-panel" aria-labelledby="chapter-title">
+          <div class="chapter-top"><span>Current chapter</span><span class="chapter-number">Pattern / 02</span></div>
+          <h2 class="chapter-title" id="chapter-title">Two pointers</h2>
+          <p class="chapter-description">Two positions. One elegant solution.<br>Learn when to move closer, and when to move forward.</p>
+          <div class="chapter-progress">
+            <div class="progress-label"><span>Chapter progress</span><strong>3 of 8 solved</strong></div>
+            <div class="progress-track" role="progressbar" aria-label="Two pointers chapter" aria-valuemin="0" aria-valuemax="8" aria-valuenow="3"><i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="next-task"><p class="task-kicker">Up next</p><h3>Container With Most Water</h3><div class="task-meta"><span class="difficulty">Medium</span><span class="reward-xp">25 XP</span></div></div>
+          <button type="button" class="inspect" id="inspect-chapter" aria-haspopup="dialog" aria-controls="chapter-dialog"><span>Inspect chapter</span><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 10h13M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.5"/></svg></button>
+        </aside>
+      </div>
+
+      <div class="lower">
+        <section class="recent" aria-labelledby="recent-title">
+          <div class="section-heading"><h2 id="recent-title">Recently completed</h2><span>Small wins, lasting patterns.</span></div>
+          <div class="problem"><svg class="problem-check" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="m13 2 10 6v10l-10 6-10-6V8Z" stroke="#7f6e52"/><path d="m8 13 3 3 7-7" stroke="currentColor" stroke-width="1.5"/></svg><span class="problem-title">Two Sum</span><span class="problem-topic">Hash maps</span><span class="problem-status">Completed</span></div>
+          <div class="problem"><svg class="problem-check" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="m13 2 10 6v10l-10 6-10-6V8Z" stroke="#7f6e52"/><path d="m8 13 3 3 7-7" stroke="currentColor" stroke-width="1.5"/></svg><span class="problem-title">Valid Palindrome</span><span class="problem-topic">Two pointers</span><span class="problem-status">Completed</span></div>
+        </section>
+        <section class="milestone" aria-labelledby="milestone-title">
+          <svg class="badge" viewBox="0 0 76 88" fill="none" role="img" aria-label="Proposed Paired thinker milestone badge, not yet earned"><path d="M38 3 70 21v38L38 83 6 59V21Z" fill="#292330" stroke="#817054"/><path d="M38 10 63 25v30L38 75 13 55V25Z" stroke="#d9ba79"/><path d="M20 42h14M27 35l7 7-7 7M56 42H42M49 35l-7 7 7 7" stroke="#d9ba79" stroke-width="2"/><path d="m38 19 3 5-3 5-3-5Z" fill="#d9ba79"/><path d="M29 60h18" stroke="#817054"/></svg>
+          <div><span class="milestone-label">Your next chapter milestone</span><h2 id="milestone-title">Paired thinker</h2><p>Complete all 8 Two pointers problems.<br><strong>5 more to earn your badge.</strong></p></div>
+        </section>
+      </div>
+    </main>
+    <footer class="page-footer"><span>Questline · Dashboard concept · Sample data</span><span>Static exploration · Navigation is illustrative · No progress is saved</span></footer>
+  </div>
+
+  <dialog id="chapter-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+    <h2 id="dialog-title">Inside this chapter concept</h2>
+    <p id="dialog-description">Questline explores a more structured way to navigate AlgoForge. This is a design proposal, not an implemented learning system.</p>
+    <ul>
+      <li><strong>Reused foundations:</strong> existing DSA topics, problems and learner progress, presented here with sample data.</li>
+      <li><strong>Proposed new features:</strong> skill-tree dependencies, chapter unlock logic and chapter milestone badges.</li>
+      <li><strong>Recommended sequence:</strong> the connectors suggest a learning order; they do not establish formal prerequisites. Arrays branches into Hash maps and Two pointers; Two pointers leads into Sliding window.</li>
+    </ul>
+    <p>No chapter unlocks, XP awards, backend calls or persistence run in this concept. The navigation labels are static; this dialog is the only interaction.</p>
+    <form method="dialog"><button type="submit" class="dialog-close" autofocus>Close concept details</button></form>
+  </dialog>
+  <script>
+    'use strict';
+    const inspectButton = document.getElementById('inspect-chapter');
+    const chapterDialog = document.getElementById('chapter-dialog');
+    inspectButton.addEventListener('click', () => {
+      chapterDialog.showModal();
+    });
+    chapterDialog.addEventListener('close', () => {
+      inspectButton.focus();
+    });
+  </script>
+</body>
+</html>

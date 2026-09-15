@@ -1,0 +1,145 @@
+[
+  {
+    "page": "studio",
+    "viewport": 900,
+    "width": 900,
+    "items": []
+  },
+  {
+    "page": "studio",
+    "viewport": 390,
+    "width": 390,
+    "items": []
+  },
+  {
+    "page": "studio",
+    "viewport": 320,
+    "width": 320,
+    "items": []
+  },
+  {
+    "page": "studio",
+    "desktop": {
+      "title": "Pattern Studio — AlgoForge concept",
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "height": 964,
+      "fonts": "loaded",
+      "h1": "Think in patterns."
+    },
+    "dialog": "pass"
+  },
+  {
+    "page": "circuit",
+    "viewport": 900,
+    "width": 900,
+    "items": []
+  },
+  {
+    "page": "circuit",
+    "viewport": 390,
+    "width": 390,
+    "items": []
+  },
+  {
+    "page": "circuit",
+    "viewport": 320,
+    "width": 320,
+    "items": []
+  },
+  {
+    "page": "circuit",
+    "desktop": {
+      "title": "Circuit Club — AlgoForge concept",
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "height": 960,
+      "fonts": "loaded",
+      "h1": "Build yourproblem sense."
+    },
+    "dialog": "pass"
+  },
+  {
+    "page": "questline",
+    "viewport": 900,
+    "width": 900,
+    "items": []
+  },
+  {
+    "page": "questline",
+    "viewport": 390,
+    "width": 390,
+    "items": []
+  },
+  {
+    "page": "questline",
+    "viewport": 320,
+    "width": 320,
+    "items": []
+  },
+  {
+    "page": "questline",
+    "desktop": {
+      "title": "Questline · AlgoForge dashboard concept",
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "height": 1030,
+      "fonts": "loaded",
+      "h1": "Every pattern opens a path."
+    },
+    "dialog": "pass"
+  },
+  {
+    "page": "focus",
+    "viewport": 900,
+    "width": 900,
+    "items": []
+  },
+  {
+    "page": "focus",
+    "viewport": 390,
+    "width": 390,
+    "items": []
+  },
+  {
+    "page": "focus",
+    "viewport": 320,
+    "width": 320,
+    "items": []
+  },
+  {
+    "page": "focus",
+    "desktop": {
+      "title": "Focus Deck — AlgoForge concept",
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "height": 972,
+      "fonts": "loaded",
+      "h1": "Back to a clear head."
+    },
+    "dialog": "pass"
+  },
+  {
+    "gallery": "studio",
+    "state": "pass"
+  },
+  {
+    "gallery": "circuit",
+    "state": "pass"
+  },
+  {
+    "gallery": "questline",
+    "state": "pass"
+  },
+  {
+    "gallery": "focus",
+    "state": "pass"
+  },
+  {
+    "gallery": "mobile",
+    "width": 390,
+    "viewport": 390,
+    "images": "4 loaded",
+    "scriptErrors": []
+  }
+]
