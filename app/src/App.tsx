@@ -247,7 +247,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#141414]">
+    <div className="min-h-screen bg-[#19191b]">
       {currentView !== 'workspace' && (
         <Navigation
           currentView={currentView}
@@ -257,13 +257,16 @@ function AppContent() {
       )}
 
       <main>
+        {/* Route transitions are an opacity crossfade only. The previous
+            y:20 -> 0 slide on every navigation added perceived latency to
+            actions used many times a day. */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView + (selectedTopicId || '')}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
           >
             <Suspense fallback={<PageSkeleton />}>
               {renderView()}
@@ -286,9 +289,11 @@ function AppContent() {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#202020',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: '#222225',
+            color: '#f1eeea',
+            border: '1px solid rgba(241,238,234,0.2)',
+            borderRadius: '6px',
+            fontSize: '0.875rem',
           },
         }}
       />

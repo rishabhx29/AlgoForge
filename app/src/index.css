@@ -2,44 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   AlgoForge — Pattern Studio
+   Selected 2026-09-13. Dark-only, committed. See DESIGN_SPEC.md.
+
+   The identity move: real algorithm structure (indexed cells, pointer pairs,
+   sorted partitions) carries the visual language, not decoration. Ground is
+   graphite; the accent is clay; success is mint.
+
+   Token architecture:
+   1. `--af-*`        the design system. Read these when writing new UI.
+   2. `--<shadcn>`    shadcn/Radix compatibility, aliased from `--af-*`.
+   3. Alpha tokens    defined as full rgba() since Tailwind can't map them.
+
+   Naming note: `--af-amber-*` and `--af-teal-*` keep their historical token
+   NAMES for compatibility with the 29 migrated files, but now carry clay and
+   mint VALUES. New code should think "accent" and "success".
+   ========================================================================== */
+
 :root {
-  --background: 0 0% 8%;
-  --foreground: 0 0% 100%;
-  --card: 0 0% 12.5%;
-  --card-foreground: 0 0% 100%;
-  --popover: 0 0% 8%;
-  --popover-foreground: 0 0% 100%;
-  --primary: 252 100% 77%;
-  --primary-foreground: 0 0% 8%;
-  --secondary: 189 100% 70%;
-  --secondary-foreground: 0 0% 8%;
-  --muted: 0 0% 20%;
-  --muted-foreground: 0 0% 92%;
-  --accent: 252 100% 77%;
-  --accent-foreground: 0 0% 8%;
-  --destructive: 16 100% 33%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 252 100% 77%;
-  --radius: 0.75rem;
-  --success: 72 100% 33%;
-  --warning: 35 100% 50%;
+  /* --- 1. Design system ------------------------------------------------ */
+  /* Ground — neutral graphite, one step above H's near-black, reads as
+     studio paper under lamplight rather than void. */
+  --af-ground: #19191b;
+  --af-surface: #222225;
+  --af-surface-hi: #2c2b30;
+
+  /* Ink ramp — warm off-white, never pure #fff */
+  --af-ink: #f1eeea;
+  --af-ink-soft: #b6b1ad;
+  --af-ink-faint: #8f8a85;
+
+  /* Accent — clay. Fill value, and a lightened ink value for text use. */
+  --af-amber: #f0997d;
+  --af-amber-ink: #f5b8a3;
+
+  /* Counter accent — mint. Success / passed only. */
+  --af-teal: #b1cbbb;
+  --af-teal-ink: #c8dfd1;
+
+  /* Failure. Softened clay-red — information, not alarm. */
+  --af-danger: #d98a76;
+  --af-danger-ink: #e8a795;
+
+  /* --- Ember: the committed colour ------------------------------------
+     A drenched tone for large surfaces (the identity band, milestone
+     blocks). Deliberately deeper and more saturated than the clay accent:
+     accent is for small marks, ember is for area. Bone text sits on top. */
+  --af-ember: #c9542c;
+  --af-ember-deep: #9c3f1f;
+  --af-ember-ink: #fdeee6;
+  --af-ember-rule: rgba(253, 238, 230, 0.28);
+  /* The solution-progress tone used by the curriculum sheet's cells. */
+  --af-cell-empty: rgba(244, 237, 230, 0.16);
+
+  /* --- 3. Alpha tokens (rgba, not mappable in tailwind) ---------------- */
+  --af-rule: rgba(241, 238, 234, 0.1);
+  --af-rule-strong: rgba(241, 238, 234, 0.2);
+  --af-amber-wash: rgba(240, 153, 125, 0.14);
+  --af-teal-wash: rgba(177, 203, 187, 0.14);
+  --af-danger-wash: rgba(217, 138, 118, 0.14);
+  --af-selection: rgba(240, 153, 125, 0.26);
+
+  /* --- 2. shadcn compatibility layer ---------------------------------- */
+  /* Aliased from the system above. Keep in sync. */
+  --background: 240 4% 10%;          /* --af-ground  #19191b */
+  --foreground: 34 20% 93%;          /* --af-ink     #f1eeea */
+  --card: 240 4% 14%;                /* --af-surface #222225 */
+  --card-foreground: 34 20% 93%;
+  --popover: 240 4% 14%;
+  --popover-foreground: 34 20% 93%;
+  --primary: 15 32% 72%;             /* --af-amber   #f0997d (clay) */
+  --primary-foreground: 240 4% 10%;
+  --secondary: 252 5% 18%;           /* --af-surface-hi */
+  --secondary-foreground: 34 20% 93%;
+  --muted: 252 5% 18%;
+  --muted-foreground: 27 6% 70%;     /* --af-ink-soft */
+  --accent: 252 5% 18%;
+  --accent-foreground: 34 20% 93%;
+  --destructive: 12 30% 66%;         /* --af-danger  #d98a76 */
+  --destructive-foreground: 240 4% 10%;
+  --border: 252 5% 18%;
+  --input: 252 5% 18%;
+  --ring: 15 32% 72%;                /* clay focus ring */
+  --success: 143 20% 75%;            /* --af-teal    #b1cbbb (mint) */
+  --warning: 15 32% 72%;             /* --af-amber */
+  --radius: 0.375rem;                /* 6px. Never 2rem. */
+
+  /* --- z-index scale (replaces arbitrary 9999) ------------------------ */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
 }
 
-/* Global Noise Texture */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
+/* Global noise texture — removed. On a warm charcoal ground it produced
+   visible banding and added nothing. The ground is meant to read as
+   solid slate. */
 
 .mask-linear-fade {
   mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
@@ -55,15 +116,342 @@ html {
 }
 
 body {
-  font-family: 'Sora', sans-serif;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
+  font-family: 'DM Sans', 'Space Grotesk', sans-serif;
+  background: var(--af-ground);
+  color: var(--af-ink);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Jersey 15 is a pixel display face — wrong register for an instrument.
+   `.font-display` now resolves to the UI face so the 21 files referencing
+   it degrade sensibly until they are migrated. */
 .font-display {
-  font-family: 'Jersey 15', sans-serif;
+  font-family: 'Space Grotesk', 'Sora', sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
+
+/* Mono — used for code, test output, timestamps, and figures */
+.font-mono,
+code,
+pre,
+kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Figures — the type system's load-bearing rule.
+   Every changing number gets this or it jitters during count-up. */
+.tnum,
+[data-figure] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Screen-reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Terminal caret — steps rather than fades, so it reads as a cursor. */
+@keyframes caret-step {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.animate-caret {
+  animation: caret-step 1s steps(1, end) infinite;
+}
+
+/* Code token colors — flat, from the Pattern Studio palette. No purple, no neon.
+   Used by the Hero code window; safe to reuse in ProblemWorkspace. */
+.tk-kw { color: #f0997d; }
+.tk-dec { color: #c8dfd1; }
+.tk-id { color: #f1eeea; }
+.tk-num { color: #cf9d85; }
+
+/* ==========================================================================
+   Motion system
+   --------------------------------------------------------------------------
+   H's register is "an instrument that reports, not a machine that cheers".
+   That rules out ambient/looping motion and big entrance gestures on things
+   the user sees constantly. What it does NOT rule out is feedback — the
+   interface must still acknowledge the pointer, show it is working, and
+   settle new content into place.
+
+   The rules, in priority order:
+
+   1. Frequency test (Emil Kowalski). Anything seen 100+/day gets no entrance
+      animation, only press feedback. Nav, rows, and the problem list are in
+      view constantly — they never animate in on scroll or on re-render.
+   2. One-shot only. Entrances run once on mount. Nothing loops except the
+      two honest "still working" signals (skeleton, caret) and the progress
+      ring while it is actually computing.
+   3. Motion is short. 120-240ms. Anything longer reads as lag on a tool
+      someone uses for hours.
+   4. Only transform and opacity animate, so nothing triggers layout.
+   5. Every rule has a reduced-motion fallback at the bottom of this file.
+
+   Durations and easings live as tokens so they cannot drift.
+   ========================================================================== */
+
+:root {
+  /* Easing. The "out" curve is the default — decelerate into place. */
+  --af-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --af-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* A small overshoot, for press/release and toggle confirmations only. */
+  --af-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Durations */
+  --af-dur-instant: 90ms;   /* press feedback */
+  --af-dur-fast: 140ms;     /* hover, focus, color */
+  --af-dur-base: 200ms;     /* row settle, small reveals */
+  --af-dur-slow: 320ms;     /* overlays, modals */
+
+  /* Negative delay used to stagger a list. Each row adds one step. */
+  --af-stagger-step: 22ms;
+}
+
+/* --------------------------------------------------------------------------
+   1 · Press and hover feedback
+   The most-used interaction in the whole app. Rows get a background wash and
+   a hairline that strengthens; interactive icons get a scale-down on press.
+   No entrance animation anywhere in this group.
+   -------------------------------------------------------------------------- */
+
+/* A list row that is clickable or hoverable. Used by the problems list,
+   leaderboard, and any ruled register of items. */
+.row-interactive {
+  position: relative;
+  transition:
+    background-color var(--af-dur-fast) var(--af-ease-out),
+    border-color var(--af-dur-fast) var(--af-ease-out);
+}
+
+.row-interactive:hover {
+  background-color: var(--af-surface);
+}
+
+.row-interactive:active {
+  background-color: var(--af-surface-hi);
+}
+
+/* A trailing affordance (the row's action cluster) that is quiet until the
+   pointer is over the row.
+   On pointer devices it starts fully transparent: on a 343-row list, a
+   permanent icon cluster in every row reads as noise and competes with the
+   problem titles. The row background already signals interactivity, and the
+   actions appear the moment the pointer arrives.
+   Touch devices have no hover, so there they are always visible — see below.
+   Keyboard users get them via :focus-within. */
+.row-actions {
+  opacity: 0;
+  transition: opacity var(--af-dur-fast) var(--af-ease-out);
+}
+
+.row-interactive:hover .row-actions,
+.row-interactive:focus-within .row-actions {
+  opacity: 1;
+}
+
+/* On touch there is no hover, so the actions are always fully visible. */
+@media (hover: none) {
+  .row-actions { opacity: 1; }
+}
+
+/* A card or tile that is clickable.
+   IMPORTANT — why this hovers to --af-surface-hi and not --af-surface:
+   a tile already rests ON --af-surface (that is the fill we give it), so
+   washing it to the same token produces zero visible change. Only rows that
+   rest on transparent can hover to --af-surface. Tiles step up one level.
+   No shadow: the register forbids it on resting surfaces. */
+.tile-interactive {
+  position: relative;
+  transition:
+    background-color var(--af-dur-fast) var(--af-ease-out),
+    border-color var(--af-dur-fast) var(--af-ease-out),
+    transform var(--af-dur-instant) var(--af-ease-out);
+}
+
+.tile-interactive:hover {
+  background-color: var(--af-surface-hi);
+  border-color: var(--af-rule-strong);
+}
+
+.tile-interactive:active {
+  transform: scale(0.995);
+}
+
+/* A chrome button — pagination arrows, refresh icons, toolbar controls.
+   Not quite a row, not quite an icon button: it has its own resting surface
+   and reads as a control, so it brightens rather than merely washing. */
+.chrome-btn {
+  transition:
+    background-color var(--af-dur-fast) var(--af-ease-out),
+    border-color var(--af-dur-fast) var(--af-ease-out),
+    color var(--af-dur-fast) var(--af-ease-out),
+    transform var(--af-dur-instant) var(--af-ease-out);
+}
+
+.chrome-btn:hover:not(:disabled) {
+  background-color: var(--af-surface-hi);
+  border-color: var(--af-rule-strong);
+}
+
+.chrome-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.chrome-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Icon button. Inherits the row's quietness; confirms on press. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition:
+    background-color var(--af-dur-fast) var(--af-ease-out),
+    color var(--af-dur-fast) var(--af-ease-out),
+    transform var(--af-dur-instant) var(--af-ease-out);
+}
+
+.icon-btn:hover {
+  background-color: var(--af-surface-hi);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* --------------------------------------------------------------------------
+   2 · Entrance — one-shot, opt-in
+   Applied only to content that is genuinely new to the user: a freshly
+   filtered list, an opened panel, a route change. Never to static chrome.
+   -------------------------------------------------------------------------- */
+
+@keyframes af-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Deliberately a 4px lift, not 20px. A tool should feel like it snapped into
+   place, not like it flew in. */
+.enter-rise {
+  animation: af-rise var(--af-dur-base) var(--af-ease-out) both;
+}
+
+/* Stagger container. Children get an incrementing delay via --i, capped so a
+   100-row list does not take 2 seconds to finish appearing. */
+.stagger > * {
+  animation: af-rise var(--af-dur-base) var(--af-ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 8) * var(--af-stagger-step));
+}
+
+/* --------------------------------------------------------------------------
+   3 · Crossfade for swapped content
+   Used when a filter changes and the list is replaced in place.
+   -------------------------------------------------------------------------- */
+
+@keyframes af-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: af-fade var(--af-dur-base) var(--af-ease-out) both;
+}
+
+/* --------------------------------------------------------------------------
+   4 · Loading — skeleton loaders that mirror the final layout
+   A skeleton that matches the real geometry reads as "content is coming".
+   A spinner reads as "something is happening somewhere".
+   -------------------------------------------------------------------------- */
+
+/* A skeleton must sit BELOW the visual weight of the content it stands in for.
+   At full --af-surface-hi it read as brighter than the real rows and pulled the
+   eye to the emptiest thing on screen. Dimmed, and the pulse is shallow. */
+.skeleton {
+  background: var(--af-surface-hi);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  border-radius: 3px;
+}
+
+/* A skeleton row matching a problem-list row's height and columns, so the
+   layout does not jump when real data replaces it. */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 12px;
+  border-top: 1px solid var(--af-rule);
+}
+
+.skeleton-row:first-child {
+  border-top: none;
+}
+
+/* --------------------------------------------------------------------------
+   5 · Figure change — confirms a number just updated
+   This is H's version of "delight": the number you are looking at is the
+   thing that moved. Brief, and gone.
+   -------------------------------------------------------------------------- */
+
+@keyframes af-figure-tick {
+  0% { color: var(--af-amber-ink); }
+  100% { color: inherit; }
+}
+
+.figure-tick {
+  animation: af-figure-tick 600ms var(--af-ease-out);
+}
+
+/* A completion/toggle confirmation. Small overshoot on scale only — never
+   paired with a glow or a shadow, which is what would tip it into casino. */
+@keyframes af-pop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* --------------------------------------------------------------------------
+   6 · Focus ring — animated in rather than snapping
+   -------------------------------------------------------------------------- */
+
+.focus-ring {
+  transition: box-shadow var(--af-dur-fast) var(--af-ease-out);
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--af-ground), 0 0 0 4px var(--af-amber);
+}
+
+/* --------------------------------------------------------------------------
+   7 · Reduced motion
+   The comprehensive guard lives at the bottom of this file. Individual
+   motion rules do not repeat it — this note is a signpost so the two do not
+   drift apart again.
+   -------------------------------------------------------------------------- */
+
+
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -72,268 +460,883 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: var(--af-ground);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: #2e2d32;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary));
+  background: #3d3c42;
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(32, 32, 32, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+/* ==========================================================================
+   Surfaces
+   Hairlines and solid fills. No glass, no wide shadows, no border+shadow
+   pairing (a named slop marker).
+   ========================================================================== */
 
+/* `.glass` and `.glass-light` are removed. These survive as aliases that
+   resolve to the flat surface token, so the 18 files referencing them render
+   correctly until they are migrated. Do not use in new code. */
+.glass,
 .glass-light {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--af-surface);
+  border: 1px solid var(--af-rule);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #a088ff 0%, #63e3ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Applied to a container that holds a list of rows separated by hairlines */
+.ruled {
+  border-top: 1px solid var(--af-rule);
 }
 
-/* Glow effects */
-.glow-primary {
-  box-shadow: 0 0 20px rgba(160, 136, 255, 0.4);
+.ruled > * + * {
+  border-top: 1px solid var(--af-rule);
 }
 
-.glow-secondary {
-  box-shadow: 0 0 20px rgba(99, 227, 255, 0.4);
+/* Section boundary rule — stronger than a row divider */
+.rule-header {
+  border-bottom: 1px solid var(--af-rule-strong);
 }
 
-/* Card hover effect */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* ==========================================================================
+   The curriculum sheet — Pattern Studio's identity surface
+   --------------------------------------------------------------------------
+   The whole curriculum on one sheet: numbered topic rows, each carrying a
+   strip of cells (one per problem) that fill as they are solved.
+
+   The strip is a read-out, not decoration. It is the reason this screen is
+   worth looking at twice — you can see where your progress is dense and where
+   it is thin, which no stat card can tell you. Motion is a bonus here, never
+   the point: with animation disabled the sheet still reads completely.
+   ========================================================================== */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+.sheet-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0 0 0.5rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--af-rule-strong);
+  margin-bottom: 0.25rem;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
-/* Button shine effect */
-.btn-shine {
-  position: relative;
+.sheet-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* A small square that rotates open — same square vocabulary as the cells,
+   so the control belongs to the sheet rather than floating above it. */
+.sheet-chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--af-ink-faint);
+  border-bottom: 1.5px solid var(--af-ink-faint);
+  transform: rotate(-45deg);
+  transition: transform var(--af-dur-fast) var(--af-ease-out);
+  flex-shrink: 0;
+  margin-top: -2px;
+}
+
+.sheet-chevron.is-open {
+  transform: rotate(45deg);
+}
+
+.sheet-group-head:hover .sheet-chevron {
+  border-color: var(--af-amber);
+}
+
+.sheet-group-head:hover .sheet-group-title {
+  color: var(--af-amber);
+}
+
+.sheet-group-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--af-ink);
+  transition: color var(--af-dur-fast) var(--af-ease-out);
+}
+
+.sheet-group-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--af-ink-soft);
+}
+
+.sheet-group-pct {
+  color: var(--af-amber);
+  font-weight: 500;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.sheet-of {
+  color: var(--af-ink-faint);
+}
+
+.sheet-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto 3.25rem;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.5rem 0.5rem;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* The step number is real sequence data — a curriculum is walked in order —
+   so it earns its place. It is deliberately quiet: the strip is the loud part. */
+.sheet-step {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--af-ink-faint);
+  transition: color var(--af-dur-fast) var(--af-ease-out);
+}
+
+.sheet-row:hover .sheet-step,
+.sheet-row:focus-visible .sheet-step {
+  color: var(--af-amber);
+}
+
+.sheet-topic {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sheet-topic-name {
+  font-size: 0.9375rem;
+  color: var(--af-ink);
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.btn-shine::before {
-  content: '';
+.sheet-topic-name.is-complete {
+  color: var(--af-ink-soft);
+}
+
+/* The next problem is present but quiet until the row is engaged, so the sheet
+   stays scannable while still answering "what would I actually do here?". */
+.sheet-next {
+  font-size: 0.75rem;
+  color: var(--af-ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--af-dur-fast) var(--af-ease-out),
+    transform var(--af-dur-fast) var(--af-ease-out);
+}
+
+.sheet-row:hover .sheet-next,
+.sheet-row:focus-visible .sheet-next {
+  opacity: 1;
+  transform: none;
+}
+
+/* Touch and coarse pointers have no hover, so the hint is always shown there. */
+@media (hover: none) {
+  .sheet-next {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+/* One cell per problem. Empty = outlined slot; solved = filled in its
+ * difficulty tone. Sized to read as discrete texture at a glance — too small
+ * and the strip greys out into a smudge, which tells you nothing. */
+.sheet-cell {
+  width: 8px;
+  height: 16px;
+  border-radius: 1px;
+  border: 1px solid rgba(244, 237, 230, 0.3);
+  background: rgba(244, 237, 230, 0.05);
+}
+
+.sheet-cell[data-solved='true'] {
+  border-color: transparent;
+  background: var(--cell-tone);
+}
+
+.sheet-empty {
+  font-size: 0.75rem;
+  color: var(--af-ink-faint);
+}
+
+.sheet-fraction {
+  text-align: right;
+  font-size: 0.8125rem;
+  color: var(--af-ink-soft);
+}
+
+.sheet-fraction strong {
+  color: var(--af-ink);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Sheet motion — one-shot, informational
+   Cells fade in once when the sheet mounts, staggered by column so the eye is
+   drawn along the row. This communicates "this is your progress filling in"
+   and then stops. Nothing loops. Reduced-motion kills it entirely and the
+   sheet still reads correctly (the cells are already in their final state).
+   -------------------------------------------------------------------------- */
+
+@keyframes af-cell-in {
+  from { opacity: 0; transform: scaleY(0.4); }
+  to { opacity: 1; transform: none; }
+}
+
+.sheet-cell[data-solved='true'] {
+  animation: af-cell-in var(--af-dur-base) var(--af-ease-out) both;
+  animation-delay: calc(var(--i, 0) * 14ms);
+}
+
+/* The ember band — the one drenched surface in the product. */
+.ember-band {
+  background: var(--af-ember);
+  color: var(--af-ember-ink);
+}
+
+/* ==========================================================================
+   Pattern explainers — the pattern, stepped
+   --------------------------------------------------------------------------
+   One shell (controls, readout, note) with a chart body per pattern. They sit
+   on the band's ground-coloured plate. Positions are driven through CSS custom
+   properties so the browser transitions them on step change with no animation
+   code; every figure is also printed as text, so the motion aids reading the
+   change rather than being the only thing carrying it.
+   ========================================================================== */
+
+.tpe {
+  --tpe-left: 0%;
+  --tpe-width: 100%;
+  --tpe-height: 50%;
+  width: 100%;
+}
+
+.tpe-chart {
+  position: relative;
+}
+
+.tpe-plot-wrap {
+  position: relative;
+  padding-top: 1.5rem;
+}
+
+.tpe-plot {
+  position: relative;
+  height: 150px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+/* Bars are neutral by default and take the accent only when they are a
+   pointer — so "which two am I comparing" is never ambiguous. */
+.tpe-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.tpe-bar {
+  position: relative;
+  width: 100%;
+  background: #34333a;
+  border-radius: 2px 2px 0 0;
+  transition: background-color var(--af-dur-base) var(--af-ease-out);
+}
+
+.tpe-bar[data-pointer='left'],
+.tpe-bar[data-pointer='right'] {
+  background: var(--af-amber);
+}
+
+.tpe-bar-value {
+  position: absolute;
+  top: -1.05rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  color: var(--af-ink-soft);
+}
+
+.tpe-bar[data-pointer='left'] .tpe-bar-value,
+.tpe-bar[data-pointer='right'] .tpe-bar-value {
+  color: var(--af-amber-ink);
+}
+
+/* The held water. Only left/width/height animate, and only on step change. */
+.tpe-water {
+  position: absolute;
+  left: var(--tpe-left);
+  width: var(--tpe-width);
+  height: var(--tpe-height);
+  bottom: 0;
+  background: rgba(240, 153, 125, 0.16);
+  border-top: 1px solid var(--af-amber);
+  transition:
+    left var(--af-dur-base) var(--af-ease-out),
+    width var(--af-dur-base) var(--af-ease-out),
+    height var(--af-dur-base) var(--af-ease-out);
+  pointer-events: none;
+}
+
+.tpe-flag {
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
-  transition: left 0.5s;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--af-amber);
+  transition: left var(--af-dur-base) var(--af-ease-out);
 }
 
-.btn-shine:hover::before {
-  left: 100%;
+.tpe-labels {
+  display: flex;
+  gap: 5px;
+  margin-top: 0.375rem;
 }
 
-/* Animated gradient border */
-.gradient-border {
+.tpe-index {
+  flex: 1;
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.625rem;
+  color: var(--af-ink-faint);
+  min-width: 0;
+}
+
+.tpe-readout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--af-rule);
+}
+
+.tpe-key {
+  display: block;
+  font-size: 0.625rem;
+  color: var(--af-ink-faint);
+  margin-bottom: 2px;
+}
+
+.tpe-val {
+  font-size: 1.125rem;
+  color: var(--af-ink);
+}
+
+.tpe-val.is-best {
+  color: var(--af-teal-ink);
+}
+
+.tpe-note {
+  margin-top: 0.875rem;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--af-ink-soft);
+  min-height: 3.4em;
+}
+
+.tpe-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.875rem;
+}
+
+.tpe-btn {
+  border: 1px solid var(--af-rule-strong);
+  background: transparent;
+  color: var(--af-ink);
+  border-radius: 5px;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--af-dur-fast) var(--af-ease-out),
+    border-color var(--af-dur-fast) var(--af-ease-out),
+    transform var(--af-dur-instant) var(--af-ease-out);
+}
+
+.tpe-btn:hover:not(:disabled) {
+  background: var(--af-surface-hi);
+  border-color: var(--af-ink-faint);
+}
+
+.tpe-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.tpe-btn:disabled {
+  color: var(--af-ink-faint);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tpe-btn-primary {
+  background: var(--af-amber);
+  border-color: var(--af-amber);
+  color: var(--af-ground);
+  font-weight: 700;
+}
+
+.tpe-btn-primary:hover:not(:disabled) {
+  background: var(--af-amber-ink);
+  border-color: var(--af-amber-ink);
+}
+
+.tpe-progress {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--af-ink-faint);
+}
+
+/* --------------------------------------------------------------------------
+   Sliding window + binary search share the character-cell row
+   -------------------------------------------------------------------------- */
+
+.sw-wrap,
+.bs-wrap {
   position: relative;
-  background: hsl(var(--card));
-  border-radius: var(--radius);
+  padding-top: 1.5rem;
 }
 
-.gradient-border::before {
+/* Cells are flex:1 with the gap moved inside as padding, so a cell's outer box
+   is exactly 1/n of the row. That is what lets the bracket be positioned with
+   plain percentages and still line up with the cells it spans. */
+.sw-row {
+  display: flex;
+}
+
+.sw-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.sw-char {
+  display: block;
+  text-align: center;
+  padding: 0.5rem 0;
+  border: 1px solid var(--af-rule);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--af-ink-faint);
+  transition:
+    background-color var(--af-dur-base) var(--af-ease-out),
+    border-color var(--af-dur-base) var(--af-ease-out),
+    color var(--af-dur-base) var(--af-ease-out);
+}
+
+.sw-cell[data-in='true'] .sw-char {
+  background: rgba(240, 153, 125, 0.16);
+  border-color: var(--af-amber);
+  color: var(--af-ink);
+}
+
+/* The probed element in a binary search — the whole point of the step. */
+.sw-cell[data-mid='true'] .sw-char {
+  border-color: var(--af-amber);
+  border-width: 2px;
+  color: var(--af-amber-ink);
+}
+
+.sw-cell[data-found='true'] .sw-char {
+  background: var(--af-teal);
+  border-color: var(--af-teal);
+  color: var(--af-ground);
+}
+
+.sw-bracket,
+.bs-bracket {
+  position: absolute;
+  top: 0;
+  height: 1rem;
+  border: 1px solid var(--af-amber);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  transition:
+    left var(--af-dur-base) var(--af-ease-out),
+    width var(--af-dur-base) var(--af-ease-out);
+}
+
+.sw-bracket {
+  left: var(--sw-left);
+  width: var(--sw-width);
+}
+
+.bs-bracket {
+  left: var(--bs-left);
+  width: var(--bs-width);
+}
+
+.sw-bracket-label {
+  position: absolute;
+  top: -0.95rem;
+  left: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.5625rem;
+  color: var(--af-amber);
+  white-space: nowrap;
+}
+
+.sw-labels {
+  display: flex;
+  margin-top: 0.375rem;
+}
+
+.sw-labels .tpe-index {
+  padding: 0 2px;
+}
+
+/* --------------------------------------------------------------------------
+   BFS — the graph plus its frontier
+   -------------------------------------------------------------------------- */
+
+.bfs-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bfs-svg {
+  width: 100%;
+  height: auto;
+  max-height: 150px;
+}
+
+.bfs-queue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--af-rule);
+}
+
+.bfs-queue-label {
+  font-size: 0.5625rem;
+  color: var(--af-ink-faint);
+  margin-right: 0.25rem;
+  text-transform: lowercase;
+}
+
+.bfs-chip {
+  min-width: 1.375rem;
+  padding: 0.125rem 0.375rem;
+  text-align: center;
+  border: 1px solid var(--af-teal);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--af-teal-ink);
+}
+
+.bfs-empty {
+  font-size: 0.6875rem;
+  color: var(--af-ink-faint);
+}
+
+/* ==========================================================================
+   Status system — the signature move
+   Solid accent fill with ground-colored text on top. This is the inverted
+   chip. Max 2-3 per screen or the "solid means important" signal dies.
+   ========================================================================== */
+
+.status-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--af-ground);
+}
+
+.status-block[data-tone='amber'] {
+  background: var(--af-amber);
+}
+
+.status-block[data-tone='teal'] {
+  background: var(--af-teal);
+}
+
+.status-block[data-tone='danger'] {
+  background: var(--af-danger);
+}
+
+.status-block[data-tone='neutral'] {
+  background: var(--af-surface-hi);
+  color: var(--af-ink);
+}
+
+/* State row — the accent as a 3px edge plus a wash, for list items that
+   represent a state rather than a value. */
+.state-row {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.state-row::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: calc(var(--radius) + 2px);
-  background: linear-gradient(135deg, #a088ff, #63e3ff, #ff8a63, #a088ff);
-  background-size: 300% 300%;
-  animation: gradient-rotate 4s ease infinite;
-  z-index: -1;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-@keyframes gradient-rotate {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+.state-row[data-state='active']::before {
+  background: var(--af-amber);
 }
 
-/* Floating animation */
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
+.state-row[data-state='passed']::before {
+  background: var(--af-teal);
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+.state-row[data-state='failed']::before {
+  background: var(--af-danger);
 }
 
-.animate-float-delayed {
-  animation: float 4s ease-in-out infinite;
-  animation-delay: 2s;
+.state-row[data-state='active'] {
+  background: var(--af-amber-wash);
 }
 
-/* Pulse glow */
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(160, 136, 255, 0.4);
-  }
-
-  50% {
-    box-shadow: 0 0 40px rgba(160, 136, 255, 0.6);
-  }
+.state-row[data-state='passed'] {
+  background: var(--af-teal-wash);
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.state-row[data-state='failed'] {
+  background: var(--af-danger-wash);
 }
 
-/* Streak flame */
-@keyframes flame {
-
-  0%,
-  100% {
-    transform: scale(1) rotate(-2deg);
-  }
-
-  25% {
-    transform: scale(1.05) rotate(2deg);
-  }
-
-  50% {
-    transform: scale(1) rotate(-1deg);
-  }
-
-  75% {
-    transform: scale(1.03) rotate(1deg);
-  }
+/* Square status mark — squares read as engineering, circles read as
+   consumer app. Used for difficulty edges, legends, and status dots. */
+.mark {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
-.animate-flame {
-  animation: flame 0.5s ease-in-out infinite;
+.mark[data-tone='amber'] { background: var(--af-amber); }
+.mark[data-tone='teal'] { background: var(--af-teal); }
+.mark[data-tone='danger'] { background: var(--af-danger); }
+.mark[data-tone='soft'] { background: var(--af-ink-soft); }
+
+.mark-outline {
+  background: transparent;
+  border: 1px solid var(--af-ink-soft);
 }
 
-/* Grid pattern background */
-.grid-pattern {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
+/* ==========================================================================
+   Difficulty
+   Re-derived from the system: Easy → teal, Medium → ink-soft, Hard → danger.
+   Expressed as a row edge + a text label, never a filled pill.
+   ========================================================================== */
 
-@keyframes grid-scroll {
-  0% {
-    background-position: 0 0;
-  }
-
-  100% {
-    background-position: 50px 50px;
-  }
-}
-
-.grid-pattern-moving {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  animation: grid-scroll 20s linear infinite;
-}
-
-/* Isometric grid pattern */
-.isometric-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='rgba(255,255,255,0.05)' stroke-width='1'%3E%3Cpath d='M30 0l30 17.32v34.64L30 69.28 0 51.96V17.32L30 0z'/%3E%3Cpath d='M30 30l30-17.32M30 30v38.28M30 30L0 12.68'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  background-size: 60px 60px;
-}
-
-/* Difficulty badges */
 .difficulty-easy {
-  background: rgba(124, 167, 0, 0.2);
-  color: #7ca700;
-  border: 1px solid rgba(124, 167, 0, 0.3);
+  color: var(--af-teal-ink);
+  background: transparent;
+  border: none;
 }
 
 .difficulty-medium {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: var(--af-ink-soft);
+  background: transparent;
+  border: none;
 }
 
 .difficulty-hard {
-  background: rgba(167, 47, 0, 0.2);
-  color: #ff6347;
-  border: 1px solid rgba(167, 47, 0, 0.3);
+  color: var(--af-danger-ink);
+  background: transparent;
+  border: none;
 }
 
-/* Progress ring animation */
-@keyframes progress-ring {
-  0% {
-    stroke-dashoffset: 100;
-  }
+/* Row edge — the primary difficulty carrier */
+.edge-easy { --row-edge: var(--af-teal); }
+.edge-medium { --row-edge: var(--af-ink-soft); }
+.edge-hard { --row-edge: var(--af-danger); }
 
-  100% {
-    stroke-dashoffset: var(--progress);
-  }
+.row-edge {
+  position: relative;
 }
 
-/* Markdown styles */
+.row-edge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--row-edge, transparent);
+}
+
+/* ==========================================================================
+   Removed
+   .gradient-text · .glow-primary · .glow-secondary · .btn-shine ·
+   .gradient-border + @keyframes gradient-rotate · .animate-float ·
+   .animate-float-delayed · .animate-pulse-glow + @keyframes pulse-glow ·
+   .animate-flame + @keyframes flame · .grid-pattern + @keyframes grid-scroll ·
+   .grid-pattern-moving · .isometric-pattern · .animate-shimmer +
+   @keyframes shimmer · .card-hover · body::before noise texture
+
+   Rationale in DESIGN_SPEC.md §3.5 and §6.
+   ========================================================================== */
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--af-amber);
+  color: var(--af-ground);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-primary:hover {
+  background: #ffb197;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--af-ink);
+  font-weight: 500;
+  border: 1px solid var(--af-rule-strong);
+  cursor: pointer;
+  transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-secondary:hover {
+  background: var(--af-surface-hi);
+}
+
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--af-ink-soft);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-quiet:hover {
+  color: var(--af-ink);
+}
+
+/* Press feedback — every pressable element. */
+.btn-primary:active,
+.btn-secondary:active,
+.btn-quiet:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   Markdown
+   ========================================================================== */
+
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3 {
-  font-weight: 600;
+  font-weight: 500;
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
+  letter-spacing: -0.015em;
 }
 
 .markdown-content p {
   margin-bottom: 0.75rem;
-  line-height: 1.7;
+  line-height: 1.65;
+  text-wrap: pretty;
 }
 
 .markdown-content code {
-  background: rgba(160, 136, 255, 0.1);
+  background: var(--af-surface-hi);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.9em;
+  color: var(--af-amber-ink);
 }
 
 .markdown-content pre {
-  background: rgba(0, 0, 0, 0.3);
+  background: #0b0b0d;
+  border: 1px solid var(--af-rule);
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow-x: auto;
   margin: 1rem 0;
 }
@@ -341,12 +1344,17 @@ body {
 .markdown-content pre code {
   background: none;
   padding: 0;
+  color: var(--af-ink);
 }
 
-/* Sidebar styles */
+/* ==========================================================================
+   Sidebar
+   The gradient bar becomes a solid amber edge.
+   ========================================================================== */
+
 .sidebar-item {
   position: relative;
-  transition: all 0.2s ease;
+  transition: color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .sidebar-item::before {
@@ -357,8 +1365,8 @@ body {
   transform: translateY(-50%);
   width: 3px;
   height: 0;
-  background: linear-gradient(180deg, #a088ff, #63e3ff);
-  transition: height 0.2s ease;
+  background: var(--af-amber);
+  transition: height 150ms cubic-bezier(0.23, 1, 0.32, 1);
   border-radius: 0 2px 2px 0;
 }
 
@@ -367,7 +1375,10 @@ body {
   height: 60%;
 }
 
-/* Tooltip */
+/* ==========================================================================
+   Tooltip
+   ========================================================================== */
+
 .tooltip {
   position: relative;
 }
@@ -379,15 +1390,16 @@ body {
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
   padding: 0.5rem 0.75rem;
-  background: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
+  background: var(--af-surface-hi);
+  color: var(--af-ink);
   font-size: 0.75rem;
   border-radius: 6px;
+  border: 1px solid var(--af-rule);
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
-  z-index: 100;
+  transition: opacity 150ms ease, visibility 150ms ease;
+  z-index: var(--z-dropdown);
 }
 
 .tooltip:hover::after {
@@ -395,27 +1407,36 @@ body {
   visibility: visible;
 }
 
-/* Loading skeleton */
-.skeleton {
-  background: linear-gradient(90deg,
-      hsl(var(--muted)) 25%,
-      hsl(var(--muted) / 0.5) 50%,
-      hsl(var(--muted)) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
+/* ==========================================================================
+   Loading skeleton
+   `.skeleton` itself is defined in the motion system above. The keyframes
+   live here because they are shared by both the bar and row variants.
+   ========================================================================== */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.72; }
 }
 
-@keyframes skeleton-loading {
+/* ==========================================================================
+   Progress ring
+   ========================================================================== */
+
+@keyframes progress-ring {
   0% {
-    background-position: 200% 0;
+    stroke-dashoffset: 100;
   }
 
   100% {
-    background-position: -200% 0;
+    stroke-dashoffset: var(--progress);
   }
 }
 
-/* Confetti animation */
+/* ==========================================================================
+   Confetti — retained, but it is the ONE place a bigger gesture is
+   permitted (rare streak/level events). Uses system colors.
+   ========================================================================== */
+
 @keyframes confetti-fall {
   0% {
     transform: translateY(-100%) rotate(0deg);
@@ -433,10 +1454,13 @@ body {
   width: 10px;
   height: 10px;
   animation: confetti-fall 3s ease-out forwards;
-  z-index: 9999;
+  z-index: var(--z-toast);
 }
 
-/* Responsive utilities */
+/* ==========================================================================
+   Responsive utilities
+   ========================================================================== */
+
 @media (max-width: 768px) {
   .hide-mobile {
     display: none !important;
@@ -449,30 +1473,42 @@ body {
   }
 }
 
-/* Focus styles */
+/* ==========================================================================
+   Focus & selection
+   ========================================================================== */
+
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
-  outline: 2px solid hsl(var(--primary));
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--af-amber);
   outline-offset: 2px;
 }
 
-/* Selection */
 ::selection {
-  background: rgba(160, 136, 255, 0.3);
-  color: white;
+  background: var(--af-selection);
+  color: var(--af-ink);
 }
 
-/* Shimmer animation for badges */
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(200%);
-  }
-}
+/* ==========================================================================
+   Reduced motion
+   Every transform animation gets a crossfade alternative.
+   ========================================================================== */
 
-.animate-shimmer {
-  animation: shimmer 3s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
 }

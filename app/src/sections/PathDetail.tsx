@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -104,8 +103,8 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
-                    <p className="text-white/50 text-sm">Loading topics...</p>
+                    <div className="w-8 h-8 border-2 border-[#8f8a85] border-t-[#f0997d] rounded-full animate-spin" />
+                    <p className="text-[#8f8a85] text-[0.8125rem]">Loading topics…</p>
                 </div>
             </div>
         );
@@ -114,7 +113,7 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
     if (!pathInfo) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-white/50">Path not found</p>
+                <p className="text-[#b6b1ad]">Path not found</p>
             </div>
         );
     }
@@ -125,160 +124,128 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
     const progressPercent = totalProblems > 0 ? Math.round((totalCompleted / totalProblems) * 100) : 0;
 
     return (
-        <section className="relative min-h-screen py-8 overflow-hidden">
-            <div className="absolute inset-0 grid-pattern opacity-20" />
-
+        <section className="relative min-h-screen py-8">
             <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Back Button */}
-                <motion.button
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                <button
                     onClick={onBack}
-                    className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 group"
+                    className="btn-quiet -ml-3 mb-6 text-[0.8125rem]"
                 >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-sm">Back to Roadmaps</span>
-                </motion.button>
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to roadmaps
+                </button>
 
                 {/* Path Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass rounded-2xl p-6 sm:p-8 mb-8"
-                >
+                <div className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] p-6 sm:p-8 mb-8">
                     <div className="flex flex-col sm:flex-row items-start gap-5">
-                        <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: `${pathInfo.color}20` }}
-                        >
-                            <Icon className="w-8 h-8" style={{ color: pathInfo.color }} />
+                        <div className="w-12 h-12 rounded-[4px] bg-[#2c2b30] flex items-center justify-center flex-shrink-0">
+                            <Icon className="w-6 h-6 text-[#f0997d]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                            <h1 className="text-2xl sm:text-3xl font-medium text-[#f1eeea] tracking-[-0.015em] mb-2">
                                 {pathInfo.title}
                             </h1>
-                            <p className="text-white/50 text-sm mb-4">{pathInfo.description}</p>
-                            <div className="flex flex-wrap items-center gap-4 text-sm">
-                                <span className="text-white/60">
-                                    <span className="font-semibold text-white">{topics.length}</span> Topics
+                            <p className="text-[#b6b1ad] text-[0.875rem] leading-relaxed mb-4">{pathInfo.description}</p>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.8125rem]">
+                                <span className="text-[#b6b1ad]">
+                                    <span className="font-medium text-[#f1eeea] tnum">{topics.length}</span> topics
                                 </span>
-                                <span className="text-white/20">•</span>
-                                <span className="text-white/60">
-                                    <span className="font-semibold text-white">{totalProblems}</span> Problems
+                                <span className="text-[#3a393e]" aria-hidden="true">·</span>
+                                <span className="text-[#b6b1ad]">
+                                    <span className="font-medium text-[#f1eeea] tnum">{totalProblems}</span> problems
                                 </span>
-                                <span className="text-white/20">•</span>
-                                <span className="text-white/60">
-                                    <span className="font-semibold" style={{ color: pathInfo.color }}>{totalCompleted}</span> Completed
+                                <span className="text-[#3a393e]" aria-hidden="true">·</span>
+                                <span className="text-[#b6b1ad]">
+                                    <span className="font-medium text-[#f0997d] tnum">{totalCompleted}</span> completed
                                 </span>
                             </div>
                         </div>
-                        {/* Progress Circle */}
+                        {/* Progress Ring */}
                         <div className="flex-shrink-0 flex flex-col items-center">
                             <div className="relative w-20 h-20">
-                                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80" role="img" aria-label="Path progress">
+                                    <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(241,238,234,0.1)" strokeWidth="6" />
                                     <circle
                                         cx="40" cy="40" r="34" fill="none"
-                                        stroke={pathInfo.color}
+                                        stroke="#f0997d"
                                         strokeWidth="6"
                                         strokeLinecap="round"
                                         strokeDasharray={`${2 * Math.PI * 34}`}
                                         strokeDashoffset={`${2 * Math.PI * 34 * (1 - progressPercent / 100)}`}
-                                        style={{ transition: 'stroke-dashoffset 1s ease' }}
                                     />
                                 </svg>
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">{progressPercent}%</span>
+                                    <span className="text-[#f1eeea] font-medium text-[0.8125rem] tnum">{progressPercent}%</span>
                                 </div>
                             </div>
-                            <span className="text-white/40 text-[10px] mt-1">Progress</span>
+                            <span className="text-[#8f8a85] text-[0.75rem] mt-1">Progress</span>
                         </div>
                     </div>
-                </motion.div>
+                </div>
 
-                {/* Topics Grid */}
-                <div className="space-y-3">
+                {/* Topics — rows on hairlines */}
+                <div className="ruled">
                     {topics.map((topic, index) => {
                         const stats = topicStats[topic.id] || { total: 0, completed: 0, easy: 0, medium: 0, hard: 0 };
                         const topicProgress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+                        const isComplete = stats.completed === stats.total && stats.total > 0;
 
                         return (
-                            <motion.div
+                            <div
                                 key={topic.id}
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.04, duration: 0.35 }}
                                 onClick={() => onTopicClick(topic.id)}
-                                className="group glass rounded-xl p-5 cursor-pointer hover:bg-white/[0.04] transition-all border border-transparent hover:border-white/[0.08]"
-                                style={{
-                                    borderLeftColor: pathInfo.color,
-                                    borderLeftWidth: '3px'
-                                }}
+                                className="state-row cursor-pointer py-4 pr-3 row-interactive"
+                                data-state={isComplete ? 'passed' : undefined}
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Index Number */}
-                                    <div
-                                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                                        style={{
-                                            background: `${pathInfo.color}15`,
-                                            color: pathInfo.color
-                                        }}
-                                    >
+                                    <div className="w-8 h-8 rounded-[4px] bg-[#2c2b30] flex items-center justify-center text-[0.75rem] font-medium text-[#b6b1ad] tnum flex-shrink-0">
                                         {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Topic Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-white font-semibold text-sm sm:text-base truncate group-hover:text-white transition-colors">
+                                            <h3 className="text-[#f1eeea] font-medium text-[0.875rem] sm:text-[0.9375rem] truncate">
                                                 {topic.title}
                                             </h3>
-                                            {stats.completed === stats.total && stats.total > 0 && (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                            {isComplete && (
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#b1cbbb] flex-shrink-0" aria-hidden="true" />
                                             )}
                                         </div>
-                                        <p className="text-white/40 text-xs truncate">{topic.description}</p>
+                                        <p className="text-[#8f8a85] text-[0.75rem] truncate">{topic.description}</p>
                                     </div>
 
-                                    {/* Difficulty Pills */}
-                                    <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                                    {/* Difficulty counts — plain figures, no pills */}
+                                    <div className="hidden sm:flex items-center gap-3 flex-shrink-0 text-[0.75rem]">
                                         {stats.easy > 0 && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">
-                                                {stats.easy}E
-                                            </span>
+                                            <span className="text-[#c8dfd1] tnum">{stats.easy}E</span>
                                         )}
                                         {stats.medium > 0 && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-medium">
-                                                {stats.medium}M
-                                            </span>
+                                            <span className="text-[#b6b1ad] tnum">{stats.medium}M</span>
                                         )}
                                         {stats.hard > 0 && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-medium">
-                                                {stats.hard}H
-                                            </span>
+                                            <span className="text-[#e8a795] tnum">{stats.hard}H</span>
                                         )}
                                     </div>
 
                                     {/* Progress & Count */}
                                     <div className="flex items-center gap-3 flex-shrink-0">
                                         <div className="text-right hidden sm:block">
-                                            <span className="text-white/70 text-xs font-medium">
+                                            <span className="text-[#b6b1ad] text-[0.75rem] font-medium tnum">
                                                 {stats.completed}/{stats.total}
                                             </span>
-                                            <div className="w-20 h-1.5 bg-white/10 rounded-full mt-1 overflow-hidden">
+                                            <div className="w-20 h-1 bg-[rgba(241,238,234,0.1)] mt-1 overflow-hidden">
                                                 <div
-                                                    className="h-full rounded-full transition-all duration-500"
-                                                    style={{
-                                                        width: `${topicProgress}%`,
-                                                        background: pathInfo.color
-                                                    }}
+                                                    className="h-full bg-[#f0997d]"
+                                                    style={{ width: `${topicProgress}%` }}
                                                 />
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-[#8f8a85] flex-shrink-0" aria-hidden="true" />
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         );
                     })}
                 </div>
@@ -286,8 +253,8 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
                 {/* Empty State */}
                 {topics.length === 0 && (
                     <div className="text-center py-16">
-                        <BarChart3 className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                        <p className="text-white/40">No topics found for this path</p>
+                        <BarChart3 className="w-6 h-6 text-[#3a393e] mx-auto mb-4" />
+                        <p className="text-[#8f8a85] text-[0.875rem]">No topics found for this path</p>
                     </div>
                 )}
             </div>

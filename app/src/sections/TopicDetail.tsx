@@ -93,7 +93,7 @@ export function TopicDetail({ topicId, onBack }: TopicDetailProps) {
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
-        <p className="text-white/60">Loading topic...</p>
+        <p className="text-[#b6b1ad]">Loading topic…</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export function TopicDetail({ topicId, onBack }: TopicDetailProps) {
   if (!topic) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
-        <p className="text-white/60">Topic not found</p>
+        <p className="text-[#b6b1ad]">Topic not found</p>
       </div>
     );
   }
@@ -195,152 +195,129 @@ export function TopicDetail({ topicId, onBack }: TopicDetailProps) {
   const progress = problems.length > 0 ? Math.round((completedProblems.size / problems.length) * 100) : 0;
 
   return (
-    <section className="relative min-h-screen pt-24 pb-12 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 grid-pattern opacity-20" />
-      <div
-        className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[200px] opacity-30"
-        style={{ background: topic.color }}
-      />
-
+    <section className="relative min-h-screen pt-24 pb-12">
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button & Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-4"
+            className="btn-quiet -ml-3 mb-4 text-[0.875rem]"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Roadmaps
+            <ArrowLeft className="w-4 h-4" />
+            Back to roadmaps
           </button>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: `${topic.color}20` }}
-              >
-                <BarChart3 className="w-8 h-8" style={{ color: topic.color }} />
+              <div className="w-12 h-12 rounded-[4px] bg-[#2c2b30] flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-[#f0997d]" />
               </div>
               <div>
-                <h1 className="font-display text-3xl sm:text-4xl text-white">{topic.title}</h1>
-                <p className="text-white/60">{topic.description}</p>
+                <h1 className="text-3xl sm:text-4xl font-medium text-[#f1eeea] tracking-[-0.03em]">{topic.title}</h1>
+                <p className="text-[#b6b1ad] text-[0.9375rem]">{topic.description}</p>
               </div>
             </div>
 
             {/* Progress */}
-            <div className="glass rounded-xl p-4 min-w-[200px]">
+            <div className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] p-4 min-w-[200px]">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Progress</span>
-                <span className="text-sm font-medium" style={{ color: topic.color }}>
+                <span className="text-[0.75rem] text-[#8f8a85]">Progress</span>
+                <span className="text-[0.875rem] font-medium text-[#f0997d] tnum">
                   {progress}%
                 </span>
               </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.5 }}
-                  className="h-full rounded-full"
-                  style={{ background: topic.color }}
+              <div className="h-1 bg-[rgba(241,238,234,0.1)] overflow-hidden">
+                <div
+                  className="h-full bg-[#f0997d]"
+                  style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs text-white/40 mt-2">
+              <p className="text-[0.75rem] text-[#8f8a85] mt-2 tnum">
                 {completedProblems.size} of {problems.length} completed
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="flex flex-col sm:flex-row gap-4 mb-6"
-        >
+        <div className="flex flex-col sm:flex-row gap-4 pb-4 mb-6 border-b border-[rgba(241,238,234,0.2)]">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8f8a85]" />
             <Input
               type="text"
-              placeholder="Search problems or tags..."
+              placeholder="Search problems or tags…"
+              aria-label="Search problems or tags"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="pl-9 bg-[#222225] border-[rgba(241,238,234,0.1)] text-[#f1eeea] placeholder:text-[#8f8a85] rounded-[6px] focus-visible:border-[#f0997d]"
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1" role="group" aria-label="Filter by difficulty">
             {(['all', 'Easy', 'Medium', 'Hard'] as const).map((diff) => (
               <button
                 key={diff}
                 onClick={() => setDifficultyFilter(diff)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${difficultyFilter === diff
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                aria-pressed={difficultyFilter === diff}
+                className={`px-3 py-1.5 rounded-[4px] text-[0.8125rem] font-medium transition-colors duration-[var(--af-dur-fast)] ${difficultyFilter === diff
+                  ? 'bg-[#f0997d] text-[#19191b]'
+                  : 'text-[#b6b1ad] hover:text-[#f1eeea] bg-[#222225]'
                   }`}
               >
                 {diff === 'all' ? 'All' : diff}
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Problems List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="space-y-3"
-        >
+        {/* Problems List — rows on hairlines with a difficulty edge */}
+        <div className="ruled">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {filteredProblems.map((problem: any, index: number) => {
+          {filteredProblems.map((problem: any) => {
             const problemMongoId = problem.id;
             const isCompleted = completedProblems.has(problemMongoId);
             const isBookmarked = bookmarkedProblems.has(problemMongoId);
 
             return (
-              <motion.div
+              <div
                 key={problemMongoId}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className={`glass rounded-xl p-4 sm:p-5 transition-all ${isCompleted ? 'border-[#7ca700]/30' : ''
-                  }`}
+                className={`row-edge px-3 py-3.5 row-interactive ${
+                  problem.difficulty === 'Easy'
+                    ? 'edge-easy'
+                    : problem.difficulty === 'Hard'
+                      ? 'edge-hard'
+                      : 'edge-medium'
+                }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   {/* Completion Toggle */}
                   <button
                     onClick={() => toggleComplete(problem.id, problemMongoId)}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 self-start sm:self-auto"
+                    aria-label={isCompleted ? `Mark ${problem.title} as incomplete` : `Mark ${problem.title} as complete`}
                   >
                     {isCompleted ? (
-                      <CheckCircle2 className="w-6 h-6 text-[#7ca700]" />
+                      <CheckCircle2 className="w-5 h-5 text-[#b1cbbb]" />
                     ) : (
-                      <Circle className="w-6 h-6 text-white/30 hover:text-white/60 transition-colors" />
+                      <Circle className="w-5 h-5 text-[#8f8a85] hover:text-[#f1eeea] transition-colors duration-[var(--af-dur-fast)]" />
                     )}
                   </button>
 
                   {/* Problem Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className={`font-medium ${isCompleted ? 'text-white/60 line-through' : 'text-white'}`}>
+                    <div className="flex items-baseline gap-3 mb-1.5 flex-wrap">
+                      <h3 className={`text-[0.9375rem] font-medium ${isCompleted ? 'text-[#b6b1ad] line-through' : 'text-[#f1eeea]'}`}>
                         {problem.title}
                       </h3>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium difficulty-${problem.difficulty.toLowerCase()}`}>
+                      <span className={`text-[0.75rem] font-medium difficulty-${problem.difficulty.toLowerCase()}`}>
                         {problem.difficulty}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       {(problem.tags || []).map((tag: string) => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 rounded-full bg-white/5 text-white/50 text-xs"
+                          className="text-[0.75rem] text-[#8f8a85]"
                         >
                           {tag}
                         </span>
@@ -349,97 +326,100 @@ export function TopicDetail({ topicId, onBack }: TopicDetailProps) {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 self-start sm:self-auto">
                     {problem.video_link && (
                       <a
                         href={problem.video_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-10 h-10 rounded-lg bg-white/5 hover:bg-[#a088ff]/20 flex items-center justify-center transition-colors group"
-                        title="Watch Video"
+                        className="w-8 h-8 icon-btn group"
+                        aria-label={`Watch the video for ${problem.title}`}
                       >
-                        <Play className="w-5 h-5 text-white/60 group-hover:text-[#a088ff]" />
+                        <Play className="w-4 h-4 text-[#8f8a85] group-hover:text-[#f1eeea]" />
                       </a>
                     )}
 
                     <button
                       onClick={() => window.location.hash = `workspace/${problemMongoId}`}
-                      className="w-10 h-10 rounded-lg bg-[#a088ff]/10 hover:bg-[#a088ff]/20 flex items-center justify-center transition-colors group"
-                      title="Solve Problem"
+                      className="w-8 h-8 icon-btn"
+                      aria-label={`Solve ${problem.title}`}
                     >
-                      <Code2 className="w-5 h-5 text-[#a088ff]" />
+                      <Code2 className="w-4 h-4 text-[#f0997d]" />
                     </button>
 
                     <button
                       onClick={() => toggleBookmark(problem.id, problemMongoId)}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isBookmarked
-                        ? 'bg-[#ffd700]/20'
-                        : 'bg-white/5 hover:bg-[#ffd700]/10'
-                        }`}
-                      title="Bookmark"
+                      aria-pressed={isBookmarked}
+                      aria-label={isBookmarked ? `Remove bookmark from ${problem.title}` : `Bookmark ${problem.title}`}
+                      className="w-8 h-8 icon-btn"
                     >
-                      <Bookmark className={`w-5 h-5 ${isBookmarked ? 'text-[#ffd700] fill-[#ffd700]' : 'text-white/60'}`} />
+                      <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-[#f0997d] fill-[#f0997d]' : 'text-[#8f8a85]'}`} />
                     </button>
 
                     <button
                       onClick={() => openNoteModal(problemMongoId, problem.title)}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors group ${notesMap[problemMongoId] ? 'bg-[#a088ff]/20' : 'bg-white/5 hover:bg-white/10'}`}
-                      title={notesMap[problemMongoId] ? 'Edit Notes' : 'Add Notes'}
+                      aria-label={notesMap[problemMongoId] ? `Edit notes for ${problem.title}` : `Add notes for ${problem.title}`}
+                      className="w-8 h-8 icon-btn"
                     >
-                      <FileText className={`w-5 h-5 ${notesMap[problemMongoId] ? 'text-[#a088ff]' : 'text-white/60 group-hover:text-white'}`} />
+                      <FileText className={`w-4 h-4 ${notesMap[problemMongoId] ? 'text-[#f0997d]' : 'text-[#8f8a85]'}`} />
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
 
         {filteredProblems.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-white/60">No problems found matching your criteria.</p>
+            <p className="text-[#b6b1ad] text-[0.9375rem]">No problems found matching your criteria.</p>
           </div>
         )}
       </div>
 
       {/* Notes Modal */}
       {notesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setNotesModal(null)} />
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setNotesModal(null)} aria-hidden="true" />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="relative w-full max-w-lg mx-4 glass rounded-2xl p-6 border border-white/10"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Problem notes"
+            className="relative w-full max-w-lg mx-4 bg-[#222225] rounded-[10px] p-6 border border-[rgba(241,238,234,0.2)]"
           >
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Notes</h3>
-                <p className="text-sm text-white/40 truncate max-w-[300px]">{notesModal.problemTitle}</p>
+              <div className="min-w-0">
+                <h3 className="text-[0.9375rem] font-medium text-[#f1eeea]">Notes</h3>
+                <p className="text-[0.8125rem] text-[#8f8a85] truncate max-w-[300px]">{notesModal.problemTitle}</p>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={saveNote}
                   disabled={savingNote}
-                  className="px-3 py-1.5 rounded-lg bg-[#a088ff]/20 text-[#a088ff] hover:bg-[#a088ff]/30 transition-colors flex items-center gap-1.5"
+                  className="btn-primary text-[0.8125rem]"
                 >
-                  <Save className="w-4 h-4" />
-                  {savingNote ? 'Saving...' : 'Save'}
+                  <Save className="w-3.5 h-3.5" />
+                  {savingNote ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   onClick={() => setNotesModal(null)}
-                  className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                  aria-label="Close notes"
+                  className="p-1.5 icon-btn text-[#8f8a85] hover:text-[#f1eeea]"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
             <textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Write your notes... Key insights, approach, time complexity, etc."
+              placeholder="Write your notes… Key insights, approach, time complexity."
               rows={10}
               autoFocus
-              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#a088ff] resize-none font-mono text-sm"
+              className="w-full px-4 py-3 rounded-[6px] bg-[#19191b] border border-[rgba(241,238,234,0.1)] text-[#f1eeea] placeholder:text-[#8f8a85] focus:outline-none focus-visible:border-[#f0997d] resize-none font-mono text-[0.8125rem] leading-relaxed"
             />
           </motion.div>
         </div>

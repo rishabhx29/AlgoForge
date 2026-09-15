@@ -1,127 +1,128 @@
-import { motion } from 'framer-motion';
-import { BookOpen, Code, Terminal, Zap, CheckCircle2, Server } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 export function Documentation() {
     return (
         <div className="min-h-screen pt-24 pb-12">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="mb-12"
-                >
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                            <BookOpen className="w-6 h-6 text-[#a088ff]" />
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <header className="mb-12 rule-header pb-6">
+                    <p className="text-[0.75rem] font-mono text-[#b6b1ad] mb-2">docs</p>
+                    <h1 className="font-display text-4xl text-[#f1eeea] tracking-[-0.015em]">Documentation</h1>
+                    <p className="text-[#b6b1ad] text-[0.9375rem] mt-2 max-w-xl">
+                        Getting started, the platform stack, and how notes are stored.
+                    </p>
+                </header>
+
+                {/* Section 1 — Quick Start */}
+                <section className="mb-14">
+                    <h2 className="text-[0.75rem] font-mono uppercase tracking-[0.08em] text-[#b6b1ad] mb-4">
+                        Quick start
+                    </h2>
+                    <p className="text-[#f1eeea] leading-relaxed mb-6 text-[0.9375rem] max-w-xl">
+                        AlgoForge guides you through Data Structures, Algorithms, Dynamic Programming and System
+                        Design with curated roadmaps and progress tracking on every problem.
+                    </p>
+
+                    <ol className="ruled">
+                        <li className="flex items-baseline gap-4 py-4">
+                            <span className="text-[#f5b8a3] font-mono text-[0.8125rem] tnum w-4 shrink-0">1</span>
+                            <div>
+                                <h3 className="text-[#f1eeea] text-[0.9375rem] font-medium mb-1">Pick a roadmap</h3>
+                                <p className="text-[#b6b1ad] text-[0.875rem]">
+                                    Open Roadmaps and select a domain you want to master. Each one is ordered, so you
+                                    can work top to bottom.
+                                </p>
+                            </div>
+                        </li>
+                        <li className="flex items-baseline gap-4 py-4">
+                            <span className="text-[#f5b8a3] font-mono text-[0.8125rem] tnum w-4 shrink-0">2</span>
+                            <div>
+                                <h3 className="text-[#f1eeea] text-[0.9375rem] font-medium mb-1">Practice problems</h3>
+                                <p className="text-[#b6b1ad] text-[0.875rem]">
+                                    Follow the sequential topics, solve each problem, and mark it solved. Your
+                                    submission history and runtime are recorded per attempt.
+                                </p>
+                            </div>
+                        </li>
+                        <li className="flex items-baseline gap-4 py-4">
+                            <span className="text-[#f5b8a3] font-mono text-[0.8125rem] tnum w-4 shrink-0">3</span>
+                            <div>
+                                <h3 className="text-[#f1eeea] text-[0.9375rem] font-medium mb-1">Take notes as you go</h3>
+                                <p className="text-[#b6b1ad] text-[0.875rem]">
+                                    Markdown notes attach to any problem. They sync to your account so the reasoning
+                                    behind a solution survives the next session.
+                                </p>
+                            </div>
+                        </li>
+                    </ol>
+                </section>
+
+                {/* Section 2 — Platform Architecture */}
+                <section className="mb-14">
+                    <h2 className="text-[0.75rem] font-mono uppercase tracking-[0.08em] text-[#b6b1ad] mb-4">
+                        Platform architecture
+                    </h2>
+                    <p className="text-[#f1eeea] leading-relaxed mb-2 text-[0.9375rem] max-w-xl">
+                        AlgoForge runs on a MERN-like stack, with the client built on React 19, Vite and Tailwind.
+                    </p>
+                    <dl className="ruled">
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-4">
+                            <dt className="text-[#f1eeea] text-[0.9375rem] font-medium w-28 shrink-0">Frontend</dt>
+                            <dd className="text-[#b6b1ad] text-[0.875rem]">
+                                React 19, Vite, Tailwind CSS, Framer Motion
+                            </dd>
                         </div>
-                        <div>
-                            <h1 className="font-display text-4xl text-white">Documentation</h1>
-                            <p className="text-white/60 mt-1">Getting started and architecture guides.</p>
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-4">
+                            <dt className="text-[#f1eeea] text-[0.9375rem] font-medium w-28 shrink-0">Backend</dt>
+                            <dd className="text-[#b6b1ad] text-[0.875rem]">
+                                Express.js, TypeScript, RESTful endpoints
+                            </dd>
                         </div>
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-4">
+                            <dt className="text-[#f1eeea] text-[0.9375rem] font-medium w-28 shrink-0">Database</dt>
+                            <dd className="text-[#b6b1ad] text-[0.875rem]">
+                                MongoDB, for JSON-shaped document storage
+                            </dd>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-4">
+                            <dt className="text-[#f1eeea] text-[0.9375rem] font-medium w-28 shrink-0">AI</dt>
+                            <dd className="text-[#b6b1ad] text-[0.875rem]">
+                                An in-app assistant that reviews your approach rather than handing over the answer
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+
+                {/* Section 3 — Notes */}
+                <section className="mb-14">
+                    <h2 className="text-[0.75rem] font-mono uppercase tracking-[0.08em] text-[#b6b1ad] mb-4">
+                        The notes system
+                    </h2>
+                    <p className="text-[#f1eeea] leading-relaxed mb-5 text-[0.9375rem] max-w-xl">
+                        Notes are markdown-enabled and can be attached globally or per problem. They sync to your
+                        account whenever you are signed in.
+                    </p>
+                    <div className="rounded-[6px] bg-[#0b0b0d] border border-[rgba(241,238,234,0.1)] overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[rgba(241,238,234,0.1)] text-[#b6b1ad]">
+                            <Terminal className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span className="text-[0.75rem] font-mono">markdown.md</span>
+                        </div>
+                        <pre className="p-4 font-mono text-[0.8125rem] leading-relaxed text-[#b6b1ad] overflow-x-auto">
+                            <code>{`# Headers
+**bold**, _italic_, \`inline code\`
+
+\`\`\`javascript
+// fenced blocks are highlighted
+function twoSum(nums, target) {
+  const seen = new Map();
+  for (let i = 0; i < nums.length; i++) {
+    if (seen.has(target - nums[i])) return [seen.get(target - nums[i]), i];
+    seen.set(nums[i], i);
+  }
+}
+\`\`\``}</code>
+                        </pre>
                     </div>
-                </motion.div>
-
-                <div className="space-y-12">
-                    {/* Section 1 */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                        className="glass rounded-2xl p-8 border border-white/10"
-                    >
-                        <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-[#ffd700]" />
-                            Quick Start
-                        </h2>
-                        <p className="text-white/70 leading-relaxed mb-6">
-                            Welcome to AlgoForge! This platform is designed to guide you through Data Structures, Algorithms,
-                            Dynamic Programming, and System Design with highly curated roadmaps and comprehensive tracking.
-                        </p>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                <h3 className="text-white font-medium mb-2 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[#a088ff]/20 flex items-center justify-center text-[#a088ff] text-xs font-bold">1</span>
-                                    Pick a Roadmap
-                                </h3>
-                                <p className="text-white/50 text-sm">Navigate to the Roadmaps section and select a domain you want to master.</p>
-                            </div>
-                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                <h3 className="text-white font-medium mb-2 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[#63e3ff]/20 flex items-center justify-center text-[#63e3ff] text-xs font-bold">2</span>
-                                    Practice Problems
-                                </h3>
-                                <p className="text-white/50 text-sm">Follow the sequential topics, solve problems, and mark them as solved.</p>
-                            </div>
-                        </div>
-                    </motion.section>
-
-                    {/* Section 2 */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="glass rounded-2xl p-8 border border-white/10"
-                    >
-                        <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-                            <Server className="w-5 h-5 text-[#a088ff]" />
-                            Platform Architecture
-                        </h2>
-                        <p className="text-white/70 leading-relaxed mb-4">
-                            AlgoForge is built on a modern MERN-like stack with emphasis on React 19, Vite, and tailwind.
-                        </p>
-                        <ul className="space-y-3 mb-6">
-                            <li className="flex items-start gap-3 text-white/60">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong className="text-white">Frontend:</strong> React, Framer Motion, Tailwind CSS</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-white/60">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong className="text-white">Backend:</strong> Express.js, TypeScript, RESTful endpoints</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-white/60">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong className="text-white">Database:</strong> MongoDB for seamless JSON document storage</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-white/60">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong className="text-white">AI Features:</strong> Integrated AI Chatbot acting as your coding mentor</span>
-                            </li>
-                        </ul>
-                    </motion.section>
-
-                    {/* Section 3 */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="glass rounded-2xl p-8 border border-white/10"
-                    >
-                        <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-                            <Code className="w-5 h-5 text-[#ff8a63]" />
-                            Working with the Notes System
-                        </h2>
-                        <p className="text-white/70 leading-relaxed mb-4">
-                            The internal notes module allows you to take markdown-enabled notes globally. All notes auto-sync to your account when you're logged in.
-                        </p>
-                        <div className="bg-black/40 rounded-xl p-4 font-mono text-sm text-emerald-300 overflow-x-auto border border-white/5">
-                            <div className="flex items-center gap-2 mb-2 text-white/30 border-b border-white/10 pb-2">
-                                <Terminal className="w-4 h-4" />
-                                <span>Markdown Supported Formats</span>
-                            </div>
-                            <code>
-                                # Headers mapped perfectly<br />
-                                **Bold text** is easy<br />
-                                ```javascript<br />
-                // Code blocks highlight out of the box!<br />
-                                function test() {'{'}<br />
-                                &nbsp;&nbsp;return true;<br />
-                                {'}'}<br />
-                                ```
-                            </code>
-                        </div>
-                    </motion.section>
-                </div>
+                </section>
             </div>
         </div>
     );

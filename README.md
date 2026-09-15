@@ -110,4 +110,33 @@ Open your browser and navigate to [http://localhost:5173](http://localhost:5173)
 
 > [!TIP]
 > Use the mock data or register a new account to test the XP and Streak systems locally.
+
+### Troubleshooting local setup
+
+**The backend appears to hang with no output.** `npm run dev` runs `nodemon` + `ts-node`, which
+performs a full type-check on every start. On a large project this can take 60s+ before the
+`[server]: Server is running` line appears, which looks like a crash. To start in ~5s, skip the
+type-check:
+
+```bash
+cd backend
+node -r ts-node/register/transpile-only src/server.ts
 ```
+
+**The frontend loads but every API call fails with "Network Error".** Check the URL. Vite's
+default `localhost` binding resolves to IPv6 `[::1]` on Windows, so `http://127.0.0.1:5173` may
+be unreachable. Use `http://localhost:5173` exactly — the backend's CORS allowlist matches that
+literal origin, and `127.0.0.1` is not listed.
+
+**`@vitejs/plugin-react can't detect preamble` and a blank page.** The dev server's
+Content-Security-Policy must permit inline scripts, because the React Refresh preamble is
+injected inline. This is already handled in `vite.config.ts` (`DEV_CSP`), which relaxes
+`script-src` for the dev server only. The `preview` and deployed policies stay strict.
+
+**`curl` returns 502 "upstream connect failed" for a server that is running.** Your shell has
+`HTTP_PROXY`/`HTTPS_PROXY` set and is routing `localhost` through them. Bypass it:
+
+```bash
+curl --noproxy '*' http://localhost:5000/api/health
+```
+

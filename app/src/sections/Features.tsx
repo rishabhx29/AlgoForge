@@ -1,175 +1,138 @@
-
-import { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Code2, BarChart3, BookOpen, Target, Trophy } from 'lucide-react';
 import { useStats } from '@/hooks/useStats';
+import { PatternDiagram } from '@/components/custom/PatternDiagram';
 
+/**
+ * Features — the product, shown rather than described.
+ *
+ * What was here: six identical icon + heading + text cards in a 3-column grid,
+ * all Title Case, describing things generically ("Track your learning journey
+ * with detailed analytics"). That is the most recognisable generated-layout
+ * pattern there is, and it told a visitor nothing they could not have guessed
+ * from the category.
+ *
+ * What replaces it: three panels of deliberately unequal size, each showing a
+ * real artifact from the product. Two of them render actual components — the
+ * cell strip the sheet is built from, and a real pattern diagram — so the
+ * section demonstrates the interface instead of listing adjectives about it.
+ *
+ * Copy is sentence case and specific. No "carefully curated", no "seamless",
+ * no "journey".
+ */
 
+/* Sample cells for the illustration. Labelled as an example in the copy, and
+ * drawn with the same device the real sheet uses, so it cannot be mistaken for
+ * a screenshot of live progress. */
+const SAMPLE_ROWS: Array<{ topic: string; solved: number; total: number }> = [
+  { topic: 'Arrays & Strings', solved: 11, total: 15 },
+  { topic: 'Linked Lists', solved: 9, total: 15 },
+  { topic: 'Stacks & Queues', solved: 12, total: 15 },
+  { topic: 'Trees & BST', solved: 6, total: 15 },
+  { topic: 'Hash Tables', solved: 4, total: 10 },
+  { topic: 'Sorting Algorithms', solved: 7, total: 10 },
+  { topic: 'Two Pointers', solved: 3, total: 10 },
+  { topic: 'Graph Basics', solved: 0, total: 8 },
+];
 
-function SpotlightCard({ children, className = "", color = "#ffffff" }: { children: React.ReactNode; className?: string; color?: string }) {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef.current) return;
-    const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
-
-  const handleMouseEnter = () => setOpacity(1);
-  const handleMouseLeave = () => setOpacity(0);
-
-  return (
-    <div
-      ref={divRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 ${className}`}
-    >
-      <div
-        className="pointer-events-none absolute -inset-px transition duration-300 z-10"
-        style={{
-          opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${color}15, transparent 40%)`,
-        }}
-      />
-      {children}
-    </div>
-  );
-}
+const CELL_TONES = ['var(--af-teal)', 'var(--af-amber)', 'var(--af-danger)'];
 
 export function Features() {
-  const { problemCount } = useStats();
-
-  const features = [
-    {
-      icon: Play,
-      title: 'Video Solutions',
-      description: 'Watch step-by-step explanations for every problem. Learn from expert instructors with clear, concise videos.',
-      color: '#a088ff',
-      offset: 0
-    },
-    {
-      icon: Code2,
-      title: 'Practice Problems',
-      description: `${problemCount} carefully curated problems from easy to hard. Practice with real interview questions from top companies.`,
-      color: '#63e3ff',
-      offset: 0
-    },
-    {
-      icon: BarChart3,
-      title: 'Progress Tracking',
-      description: 'Track your learning journey with detailed analytics. See your improvement over time with visual insights.',
-      color: '#ff8a63',
-      offset: 0
-    },
-    {
-      icon: BookOpen,
-      title: 'Personal Notes',
-      description: 'Take notes on any problem. Save your learnings and revisit them anytime with our markdown editor.',
-      color: '#88ff9f',
-      offset: 0
-    },
-    {
-      icon: Target,
-      title: 'Daily Challenges',
-      description: 'Get a new set of problems every day. Maintain your streak and build consistent learning habits.',
-      color: '#ff88c9',
-      offset: 0
-    },
-    {
-      icon: Trophy,
-      title: 'Gamification',
-      description: 'Earn XP, unlock badges, and climb the leaderboard. Make learning fun and competitive.',
-      color: '#ffd700',
-      offset: 0
-    }
-  ];
+  const { problemCount, loaded } = useStats();
 
   return (
-    <section id="features" className="relative py-24 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 isometric-pattern opacity-20" />
-
-      {/* Gradient Orbs */}
-      <div className="absolute top-1/2 left-0 w-96 h-96 bg-[#a088ff]/10 rounded-full blur-[120px] -translate-y-1/2" />
-      <div className="absolute top-1/3 right-0 w-80 h-80 bg-[#63e3ff]/10 rounded-full blur-[100px]" />
-
+    <section id="features" className="relative py-20 sm:py-24">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-display text-4xl sm:text-5xl text-white mb-4">
-            Everything You <span className="gradient-text">Need</span>
+        <div className="max-w-2xl mb-12">
+          <h2 className="font-display text-[2rem] sm:text-[2.5rem] text-[#f1eeea] mb-4 tracking-[-0.02em] leading-tight">
+            Built around one idea: see the structure first.
           </h2>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            A complete platform designed to help you master coding interviews
-            and become a better programmer.
+          <p className="text-[0.9375rem] text-[#b6b1ad] leading-relaxed">
+            {loaded ? `${problemCount} problems` : 'Hundreds of problems'} are easy to find.
+            Knowing which pattern each one belongs to — and being able to see it — is the
+            part that is usually missing.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: feature.offset }}
-              viewport={{ once: true }}
-              transition={{
-                duration: 0.6,
-                delay: index * 0.1,
-                ease: [0.16, 1, 0.3, 1] as const
-              }}
-              className="h-full"
-            >
-              <SpotlightCard className="h-full p-6" color={feature.color}>
-                {/* Holographic Border */}
-                <div
-                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(135deg, ${feature.color}30, transparent 50%)`,
-                    padding: '1px'
-                  }}
-                />
+        {/* Deliberately unequal: a large panel, then two supporting ones. */}
+        <div className="grid lg:grid-cols-[1.25fr_1fr] gap-5">
 
-                {/* Icon */}
-                <motion.div
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 relative z-20"
-                  style={{ background: `${feature.color}20` }}
-                >
-                  <feature.icon
-                    className="w-7 h-7"
-                    style={{ color: feature.color }}
-                  />
-                </motion.div>
+          {/* The sheet */}
+          <article className="rounded-[8px] bg-[#222225] border border-[rgba(241,238,234,0.1)] p-6 sm:p-7 flex flex-col">
+            <h3 className="text-[1.125rem] font-medium text-[#f1eeea] mb-2">
+              Your whole curriculum on one sheet
+            </h3>
+            <p className="text-[0.875rem] text-[#b6b1ad] leading-relaxed mb-6 max-w-[52ch]">
+              Every topic, numbered in the order it should be learned, with each problem
+              as a single cell. Filled means solved. You can see where you are dense and
+              where you are thin without reading a single number.
+            </p>
 
-                {/* Content */}
-                <div className="relative z-20">
-                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-[#a088ff] transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-white/60 text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
+            {/* A live rendering of the same cell device the sheet uses. */}
+            <div className="mt-auto" aria-label="Example of the curriculum sheet's cell strip">
+              <div className="flex items-baseline justify-between mb-3">
+                <span className="text-[0.6875rem] font-mono text-[#8f8a85]">example</span>
+                <span className="text-[0.6875rem] font-mono text-[#8f8a85] tnum">31 topics · 343 problems</span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {SAMPLE_ROWS.map((row, r) => (
+                  <div key={row.topic} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3">
+                    <span className="text-[0.75rem] text-[#b6b1ad] truncate">{row.topic}</span>
+                    <span className="flex gap-[3px] flex-wrap">
+                      {Array.from({ length: row.total }).map((_, i) => {
+                        const solved = i < row.solved;
+                        return (
+                          <span
+                            key={i}
+                            className="sheet-cell"
+                            data-solved={solved ? 'true' : 'false'}
+                            style={{
+                              '--cell-tone': CELL_TONES[(i + r) % CELL_TONES.length],
+                              '--i': Math.min(i, 20),
+                            } as React.CSSProperties}
+                          />
+                        );
+                      })}
+                    </span>
+                    <span className="text-[0.75rem] text-[#8f8a85] tnum">
+                      {row.solved}
+                      <span className="text-[#6f6a65]">/{row.total}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </article>
 
-                {/* Hover Glow */}
-                <div
-                  className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none"
-                  style={{ background: feature.color }}
-                />
-              </SpotlightCard>
-            </motion.div>
-          ))}
+          {/* Two supporting panels */}
+          <div className="flex flex-col gap-5">
+
+            <article className="rounded-[8px] bg-[#222225] border border-[rgba(241,238,234,0.1)] p-6 flex-1 flex flex-col">
+              <h3 className="text-[1.125rem] font-medium text-[#f1eeea] mb-2">
+                Step through the algorithm first
+              </h3>
+              <p className="text-[0.875rem] text-[#b6b1ad] leading-relaxed mb-4">
+                Pointers move, the range closes, the best answer updates. The steps come
+                from running the real algorithm, so what you see is what the code does.
+              </p>
+              <div
+                className="mt-auto rounded-[6px] p-4 flex items-center justify-center"
+                style={{ background: 'var(--af-ground)' }}
+              >
+                <PatternDiagram topicTitle="Binary Search" className="w-full max-w-[320px] h-auto" />
+              </div>
+            </article>
+
+            <article className="rounded-[8px] bg-[#222225] border border-[rgba(241,238,234,0.1)] p-6">
+              <h3 className="text-[1.125rem] font-medium text-[#f1eeea] mb-2">
+                Your reasoning, kept with the problem
+              </h3>
+              <p className="text-[0.875rem] text-[#b6b1ad] leading-relaxed">
+                Notes live beside the problem they belong to, in markdown, so the insight
+                you had at 1am is still there next month. Progress, streaks and XP are
+                recorded as you go — reported plainly, not dangled.
+              </p>
+            </article>
+
+          </div>
         </div>
       </div>
     </section>

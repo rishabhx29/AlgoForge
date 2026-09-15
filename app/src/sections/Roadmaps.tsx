@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 import {
   Binary,
   Cpu,
@@ -28,9 +28,36 @@ const iconMap: Record<string, React.ElementType> = {
   Server
 };
 
+/** Skeleton mirroring the roadmap card grid — 6 tiles, same heights. */
+function RoadmapsSkeleton() {
+  return (
+    <section className="relative py-24" aria-hidden="true">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pb-4 mb-8 border-b border-[rgba(241,238,234,0.2)]">
+          <div className="skeleton h-9 w-72 rounded-[4px] mb-4" />
+          <div className="skeleton h-4 w-full max-w-2xl rounded-[3px]" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="skeleton w-10 h-10 rounded-[4px]" />
+                <div className="skeleton h-4 w-16 rounded-[3px]" />
+              </div>
+              <div className="skeleton h-5 w-40 rounded-[3px] mb-3" />
+              <div className="skeleton h-3.5 w-full rounded-[3px] mb-2" />
+              <div className="skeleton h-3.5 w-4/5 rounded-[3px] mb-5" />
+              <div className="skeleton h-1 w-full rounded-[1px]" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Roadmaps({ onPathClick }: RoadmapsProps) {
   const { user } = useAuth();
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { problemCount, videoCount, roadmapCount, userCount } = useStats();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,64 +125,27 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
     fetchData();
   }, [user]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1] as const
-      }
-    }
-  };
-
   if (loading) {
-    return <div className="py-24 text-center text-white/60">Loading roadmaps...</div>;
+    return <RoadmapsSkeleton />;
   }
 
   return (
-    <section id="roadmaps" className="relative py-24 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 grid-pattern opacity-20" />
-
+    <section id="roadmaps" className="relative py-24">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-display text-4xl sm:text-5xl text-white mb-4">
-            Learning <span className="gradient-text">Roadmaps</span>
+        <div className="pb-4 mb-8 border-b border-[rgba(241,238,234,0.2)]">
+          <h2 className="text-3xl sm:text-4xl font-medium text-[#f1eeea] tracking-[-0.03em] mb-3">
+            Learning roadmaps
           </h2>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
+          <p className="text-[0.9375rem] text-[#b6b1ad] leading-relaxed max-w-2xl">
             Choose your path and start your journey. Each roadmap is carefully curated
             to take you from beginner to expert.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Bento Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {categories.map((category) => {
+        {/* Paths — bordered surfaces on hairlines, no hover lift, no glow */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
+          {categories.map((category, tileIndex) => {
             const Icon = iconMap[category.icon] || Binary;
             const topics = topicsMap[category.id] || [];
             const totalProblems = category.totalProblems || 0;
@@ -163,145 +153,99 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
             const progressPercent = totalProblems > 0 ? Math.round((solvedCount / totalProblems) * 100) : 0;
 
             return (
-              <motion.div
+              <div
                 key={category.id}
-                variants={itemVariants}
-                onMouseEnter={() => setHoveredCategory(category.id)}
-                onMouseLeave={() => setHoveredCategory(null)}
-                className="group relative"
+                className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] overflow-hidden cursor-pointer tile-interactive group"
+                onClick={() => onPathClick(category.id)}
+                style={{ '--i': tileIndex } as CSSProperties}
               >
-                <div
-                  className="relative h-full glass rounded-2xl p-6 overflow-hidden card-hover cursor-pointer"
-                  style={{
-                    transform: hoveredCategory === category.id
-                      ? 'translateY(-4px) scale(1.02)'
-                      : 'translateY(0) scale(1)',
-                    transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                  onClick={() => onPathClick(category.id)}
-                >
-                  {/* Gradient Border Effect */}
-                  <div
-                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background: `linear-gradient(135deg, ${category.color}40, transparent)`,
-                      padding: '1px'
-                    }}
-                  />
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    {/* Icon & Title */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div
-                        className="w-14 h-14 rounded-xl flex items-center justify-center"
-                        style={{ background: `${category.color}20` }}
-                      >
-                        <Icon
-                          className="w-7 h-7"
-                          style={{ color: category.color }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 text-white/40">
-                        <span className="text-sm">{topics.length} topics</span>
-                      </div>
+                <div className="p-6">
+                  {/* Icon & Title */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 rounded-[4px] bg-[#2c2b30] flex items-center justify-center">
+                      <Icon
+                        className="w-5 h-5 text-[#f0997d]"
+                      />
                     </div>
-
-                    <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-[#a088ff] transition-colors">
-                      {category.title}
-                    </h3>
-                    <p className="text-white/60 text-sm mb-4 line-clamp-2">
-                      {category.description}
-                    </p>
-
-                    {/* Progress */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-white/60">Progress</span>
-                        <span className="text-white/80">{solvedCount}/{totalProblems}</span>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${progressPercent}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          className="h-full rounded-full"
-                          style={{ background: category.color }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Topics Preview */}
-                    <div className="space-y-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {topics.slice(0, 3).map((topic: any) => (
-                        <div
-                          key={topic.id}
-                          className="flex items-center gap-2 text-sm text-white/60"
-                        >
-                          <PlayCircle className="w-4 h-4" style={{ color: category.color }} />
-                          <span className="truncate">{topic.title}</span>
-                        </div>
-                      ))}
-                      {topics.length > 3 && (
-                        <div className="text-sm text-white/40 pl-6">
-                          +{topics.length - 3} more topics
-                        </div>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    <div className="mt-6 pt-4 border-t border-white/10">
-                      <button
-                        className="flex items-center gap-2 text-sm font-medium group/btn"
-                        style={{ color: category.color }}
-                      >
-                        Start Learning
-                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
+                    <div className="flex items-center gap-1 text-[#8f8a85]">
+                      <span className="text-[0.75rem] tnum">{topics.length} topics</span>
                     </div>
                   </div>
 
-                  {/* Hover Glow */}
-                  <div
-                    className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full blur-[60px] opacity-0 group-hover:opacity-50 transition-opacity duration-500"
-                    style={{ background: category.color }}
-                  />
+                  <h3 className="text-[1.125rem] font-medium text-[#f1eeea] mb-2">
+                    {category.title}
+                  </h3>
+                  <p className="text-[#b6b1ad] text-[0.8125rem] leading-relaxed mb-4 line-clamp-2">
+                    {category.description}
+                  </p>
+
+                  {/* Progress */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-[0.75rem] mb-2">
+                      <span className="text-[#8f8a85]">Progress</span>
+                      <span className="text-[#b6b1ad] tnum">{solvedCount}/{totalProblems}</span>
+                    </div>
+                    <div className="h-1 bg-[rgba(241,238,234,0.1)] overflow-hidden">
+                      <div
+                        className="h-full bg-[#f0997d]"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Topics Preview */}
+                  <div className="space-y-2">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {topics.slice(0, 3).map((topic: any) => (
+                      <div
+                        key={topic.id}
+                        className="flex items-center gap-2 text-[0.8125rem] text-[#b6b1ad]"
+                      >
+                        <PlayCircle className="w-3.5 h-3.5 text-[#8f8a85] shrink-0" />
+                        <span className="truncate">{topic.title}</span>
+                      </div>
+                    ))}
+                    {topics.length > 3 && (
+                      <div className="text-[0.8125rem] text-[#8f8a85] pl-6 tnum">
+                        +{topics.length - 3} more topics
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CTA */}
+                  <div className="mt-6 pt-4 border-t border-[rgba(241,238,234,0.1)]">
+                    <button
+                      className="btn-quiet -ml-3 text-[0.8125rem]"
+                    >
+                      Start learning
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
 
-        {/* Stats Row */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4"
-        >
+        {/* Stats Row — figures on hairlines */}
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 border-t border-b border-[rgba(241,238,234,0.2)]">
           {[
-            { label: 'Total Problems', value: problemCount, color: '#a088ff' },
-            { label: 'Video Solutions', value: videoCount, color: '#63e3ff' },
-            { label: 'Learning Paths', value: roadmapCount, color: '#ff8a63' },
-            { label: 'Active Learners', value: userCount, color: '#88ff9f' }
+            { label: 'Total problems', value: problemCount },
+            { label: 'Video solutions', value: videoCount },
+            { label: 'Learning paths', value: roadmapCount },
+            { label: 'Active learners', value: userCount }
           ].map((stat) => (
             <div
               key={stat.label}
-              className="glass rounded-xl p-4 text-center"
+              className="px-4 py-3.5 border-r border-[rgba(241,238,234,0.1)] last:border-r-0"
             >
-              <p
-                className="text-2xl sm:text-3xl font-bold mb-1"
-                style={{ color: stat.color }}
-              >
-                {stat.value}
+              <p className="text-[1.5rem] font-medium text-[#f1eeea] tnum leading-none mb-1.5">
+                {stat.value.toLocaleString()}
               </p>
-              <p className="text-sm text-white/60">{stat.label}</p>
+              <p className="text-[0.75rem] text-[#8f8a85]">{stat.label}</p>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

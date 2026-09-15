@@ -35,14 +35,37 @@ export const getTopicById = async (topicId: string) => {
 };
 
 /**
+ * The content API returns each problem's topic as `topic_slug`, while every
+ * consumer in the app keys topics by `id` (the topic's slug is its id — see
+ * `Topic.slug @map("id")`). Normalising here, at the single boundary, keeps
+ * that contract in one place: callers can keep filtering on `topic_id`.
+ *
+ * Without this, `problem.topic_id` is `undefined` and every topic join in the
+ * dashboard, profile and problem list silently matches nothing — which reads
+ * as "0 of 0 solved" rather than as an error.
+ *
+ * Typed as `any` on purpose: these endpoints have never been typed, and this
+ * fix must not change the contract its callers compile against.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withTopicId = (problem: any): any => {
+    const slug = problem?.topic_slug;
+    if (typeof slug === 'string' && !problem.topic_id) {
+        return { ...problem, topic_id: slug };
+    }
+    return problem;
+};
+
+/**
  * Fetches all problems belonging to a specific topic.
  *
- * @param topicId - The slug/ID of the topic.
+ * @param topicId - The slug/ID of the learning topic.
  * @returns A promise resolving to an array of problem objects for the given topic.
  */
 export const getProblemsByTopic = async (topicId: string) => {
     const response = await axios.get(`${API_BASE_URL}/api/content/topics/${topicId}/problems`);
-    return response.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (response.data as any[]).map(withTopicId);
 };
 
 /**
@@ -52,7 +75,8 @@ export const getProblemsByTopic = async (topicId: string) => {
  */
 export const getAllProblems = async () => {
     const response = await axios.get(`${API_BASE_URL}/api/content/problems`);
-    return response.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (response.data as any[]).map(withTopicId);
 };
 
 /**

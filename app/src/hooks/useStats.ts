@@ -10,6 +10,23 @@ export function useStats() {
     const [roadmapCount, setRoadmapCount] = useState<string>('0');
     const [loading, setLoading] = useState(true);
 
+    /**
+     * `loaded` is true only once a fetch has actually succeeded.
+     *
+     * This exists because the counts start at the string '0', and consumers that
+     * render them directly would show "0 problems" during the request — and for
+     * good, if it fails. On a landing page that reads as "this site is empty",
+     * which is worse than showing nothing. Render a placeholder until this is
+     * true, rather than a number that is not yet known.
+     */
+    const [loaded, setLoaded] = useState(false);
+
+    /* Raw values alongside the formatted ones. The formatted strings are for
+     * display ("1.2K+"); anything that needs to compute with a count — a
+     * proportion, a comparison — must use the number. */
+    const [rawUserCount, setRawUserCount] = useState(0);
+    const [rawProblemCount, setRawProblemCount] = useState(0);
+
     useEffect(() => {
         const fetchStats = async () => {
             try {
@@ -26,6 +43,9 @@ export function useStats() {
                 setProblemCount(formatCount(data.problemCount));
                 setVideoCount(formatCount(data.videoCount));
                 setRoadmapCount(`${data.roadmapCount}`);
+                setRawUserCount(Number(data.userCount) || 0);
+                setRawProblemCount(Number(data.problemCount) || 0);
+                setLoaded(true);
             } catch (error) {
                 console.error('Error fetching stats:', error);
             } finally {
@@ -41,6 +61,9 @@ export function useStats() {
         problemCount,
         videoCount,
         roadmapCount,
-        loading
+        loading,
+        loaded,
+        rawUserCount,
+        rawProblemCount
     };
 }

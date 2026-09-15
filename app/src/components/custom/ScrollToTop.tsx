@@ -30,14 +30,15 @@ export function ScrollToTop() {
         <AnimatePresence>
             {isVisible && (
                 <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                     onClick={scrollToTop}
-                    className="fixed bottom-24 right-6 p-4 rounded-full bg-[#a088ff] text-white shadow-[0_0_20px_rgba(160,136,255,0.4)] z-40 hover:bg-[#8f76fa] transition-colors"
+                    className="fixed bottom-24 right-6 p-3 rounded-[6px] bg-[#222225] border border-[rgba(241,238,234,0.2)] text-[#f1eeea] z-30 hover:bg-[#2c2b30] active:scale-[0.98] transition-colors duration-[var(--af-dur-fast)]"
                     aria-label="Scroll to top"
                 >
-                    <ArrowUp className="w-5 h-5" />
+                    <ArrowUp className="w-4 h-4" />
                 </motion.button>
             )}
         </AnimatePresence>

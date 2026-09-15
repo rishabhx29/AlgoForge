@@ -1,295 +1,134 @@
-
-import { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Users, Star, Sparkles, Terminal, Cpu } from 'lucide-react';
+import { ArrowRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/hooks/useStats';
-
+import { PatternExplainer } from '@/components/custom/stepper';
 
 interface HeroProps {
   onGetStarted: () => void;
 }
 
-const WORDS = ['Algorithms', 'System Design', 'Data Structures', 'Problem Solving'];
-
-function TypewriterText() {
-  const [index, setIndex] = useState(0);
-  const [subIndex, setSubIndex] = useState(0);
-  const [reverse, setReverse] = useState(false);
-  const [blink, setBlink] = useState(true);
-
-  // Blinking cursor
-  useEffect(() => {
-    const timeout2 = setInterval(() => {
-      setBlink((prev) => !prev);
-    }, 500);
-    return () => clearInterval(timeout2);
-  }, []);
-
-  // Typing logic
-  useEffect(() => {
-    if (subIndex === WORDS[index].length + 1 && !reverse) {
-      setTimeout(() => setReverse(true), 0);
-      return;
-    }
-
-    if (subIndex === 0 && reverse) {
-      setTimeout(() => {
-        setReverse(false);
-        setIndex((prev) => (prev + 1) % WORDS.length);
-      }, 0);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (reverse ? -1 : 1));
-    }, reverse ? 75 : Math.random() * 50 + 100);
-
-    return () => clearTimeout(timeout);
-  }, [subIndex, index, reverse]);
-
-  return (
-    <span className="gradient-text inline-block min-w-[300px] text-left">
-      {WORDS[index].substring(0, subIndex)}
-      <span className={`${blink ? 'opacity-100' : 'opacity-0'} ml-1 text-white`}>|</span>
-    </span>
-  );
-}
-
-function CodeWindow() {
-  const codeSnippet = `function binarySearch(arr, target) {
-  let left = 0;
-  let right = arr.length - 1;
-
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    
-    if (arr[mid] === target) {
-      return mid; // Found!
-    }
-    
-    if (arr[mid] < target) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
-    }
-  }
-  return -1;
-}`;
-
-  const [displayedCode, setDisplayedCode] = useState('');
-
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setDisplayedCode(codeSnippet.substring(0, i));
-      i++;
-      if (i > codeSnippet.length) {
-        clearInterval(interval);
-      }
-    }, 30);
-    return () => clearInterval(interval);
-  }, [codeSnippet]);
-
-  return (
-    <div className="glass rounded-xl overflow-hidden shadow-2xl border border-white/10 w-full max-w-lg mx-auto text-left">
-      {/* Window Header */}
-      <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500/80" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-          <div className="w-3 h-3 rounded-full bg-green-500/80" />
-        </div>
-        <div className="text-xs text-white/40 font-mono">search.js</div>
-      </div>
-      {/* Code Area */}
-      <div className="p-6 bg-[#0f0f0f]/90 overflow-hidden h-[300px]">
-        <pre className="font-mono text-sm leading-relaxed">
-          <code className="text-blue-400">
-            {displayedCode.split('\n').map((line, i) => (
-              <div key={i} className="table-row">
-                <span className="table-cell select-none text-white/20 pr-4 text-right w-8">{i + 1}</span>
-                <span dangerouslySetInnerHTML={{
-                  __html: line
-                    .replace(/function|return|while|if|else/g, '<span class="text-purple-400">$&</span>')
-                    .replace(/const|let/g, '<span class="text-blue-400">$&</span>')
-                    .replace(/arr|target|left|right|mid/g, '<span class="text-yellow-200">$&</span>')
-                    .replace(/\/\/.*/g, '<span class="text-green-400">$&</span>')
-                }} />
-              </div>
-            ))}
-          </code>
-        </pre>
-      </div>
-    </div>
-  );
-}
+/**
+ * Hero — the front door, in the Pattern Studio language.
+ *
+ * What changed and why:
+ *
+ * - The rotating typewriter headline is gone. "Master [Algorithms|System Design|
+ *   Data Structures]" is the generic landing-page move, and it made the product
+ *   look like every other course site. The claim is now specific: this teaches
+ *   the pattern, and it shows you the structure.
+ * - The typing code window is gone. It was a "watch it load" animation that
+ *   demonstrated nothing — a visitor waited three seconds to see code they
+ *   could not interact with.
+ * - In its place: the **real binary-search explainer**, the same component the
+ *   dashboard uses. A visitor can step through an algorithm on the landing page
+ *   before signing up, which demonstrates the product instead of describing it.
+ * - The band is drenched ember — the same committed surface as the dashboard —
+ *   and starts below the fixed nav so the nav's light text never sits on
+ *   terracotta, where it would fall to roughly 3.4:1.
+ */
 
 export function Hero({ onGetStarted }: HeroProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start']
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
-
-  const { userCount, problemCount } = useStats();
+  const { userCount, problemCount, loaded } = useStats();
 
   return (
-    <section
-      id="home"
-      ref={containerRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20"
-    >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 isometric-pattern opacity-50" />
+    <section id="home" className="pt-24 sm:pt-28">
+      {/* Full-bleed band: the background spans the viewport, the content does not. */}
+      <div className="ember-band">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="grid lg:grid-cols-[1fr_1.02fr] gap-10 lg:gap-14 items-center">
 
-      {/* Animated Gradient Orbs */}
-      <motion.div
-        animate={{
-          x: [0, 50, 0],
-          y: [0, -30, 0],
-          scale: [1, 1.1, 1]
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#a088ff]/10 rounded-full blur-[100px]"
-      />
-      <motion.div
-        animate={{
-          x: [0, -40, 0],
-          y: [0, 40, 0],
-          scale: [1, 1.2, 1]
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#63e3ff]/10 rounded-full blur-[100px]"
-      />
-
-      {/* Grid Lines */}
-      <div className="absolute inset-0 grid-pattern-moving opacity-30" />
-
-      {/* Content */}
-      <motion.div
-        style={{ y, opacity, scale }}
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
-      >
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-
-          {/* Text Content */}
-          <div className="flex-1 text-center lg:text-left">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm"
-            >
-              <Sparkles className="w-4 h-4 text-[#a088ff]" />
-              <span className="text-sm text-white/80">Trusted by {userCount} learners worldwide</span>
-            </motion.div>
-
-            {/* Heading */}
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="font-display text-5xl sm:text-6xl md:text-7xl text-white mb-6 leading-tight"
-            >
-              Master <br />
-              <TypewriterText />
-            </motion.h1>
-
-            {/* Subheading */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-lg sm:text-xl text-white/60 mb-10 max-w-2xl mx-auto lg:mx-0"
-            >
-              Structured learning paths for Data Structures, Algorithms, and Interview Preparation.
-              Track your progress, take notes, and level up your skills.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-12"
-            >
-              <Button
-                size="lg"
-                onClick={onGetStarted}
-                className="btn-shine bg-gradient-to-r from-[#a088ff] to-[#63e3ff] text-[#141414] hover:opacity-90 px-8 py-6 text-lg font-medium rounded-xl group relative overflow-hidden"
+            {/* Copy */}
+            <div className="text-center lg:text-left">
+              <p
+                className="text-[0.8125rem] mb-5"
+                style={{ color: 'var(--af-ember-ink)', opacity: 0.85 }}
               >
-                <span className="relative z-10 flex items-center">
-                  Get Started Free
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Button>
+                Data structures, algorithms and system design — on one sheet
+              </p>
 
-            </motion.div>
+              <h1 className="font-display text-[2.25rem] sm:text-[3rem] lg:text-[3.5rem] leading-[0.98] tracking-[-0.03em] mb-5 text-balance">
+                Learn the pattern.
+                <br />
+                Not just the answer.
+              </h1>
 
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
-              className="flex flex-wrap items-center justify-center lg:justify-start gap-8 sm:gap-12"
-            >
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#a088ff]" />
-                <span className="text-white/80">
-                  <span className="font-semibold text-white">{userCount}</span> Learners
-                </span>
+              <p
+                className="text-[1rem] leading-relaxed mb-8 max-w-[46ch] mx-auto lg:mx-0"
+                style={{ color: 'var(--af-ember-ink)', opacity: 0.88 }}
+              >
+                Every topic, every problem and your exact position on a single sheet.
+                Step through an algorithm before you write a line of it — so the
+                structure is something you have seen, not something you memorised.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <Button
+                  size="lg"
+                  onClick={onGetStarted}
+                  className="hover:opacity-90 active:scale-[0.98] px-6 py-5 text-[0.9375rem] font-bold rounded-[6px] transition-[opacity,transform] duration-[var(--af-dur-fast)] group"
+                  style={{ background: 'var(--af-ember-ink)', color: 'var(--af-ember-deep)' }}
+                >
+                  Start with a problem
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-[var(--af-dur-fast)]" />
+                </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-[#63e3ff]" />
-                <span className="text-white/80">
-                  <span className="font-semibold text-white">{problemCount}</span> Problems
-                </span>
+
+              {/* Figures on the band, tabular. Real counts, not round numbers.
+                  A placeholder stands in until the fetch resolves — showing a
+                  literal 0 would tell a visitor the catalogue is empty. */}
+              <div
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-x-10 gap-y-4 mt-10"
+                style={{ color: 'var(--af-ember-ink)' }}
+              >
+                <div>
+                  <div className="text-[1.375rem] font-medium tnum leading-none mb-1">
+                    {loaded ? problemCount : '—'}
+                  </div>
+                  <div className="text-[0.75rem] opacity-80">Problems</div>
+                </div>
+                <div>
+                  <div className="text-[1.375rem] font-medium tnum leading-none mb-1">
+                    {loaded ? userCount : '—'}
+                  </div>
+                  <div className="text-[0.75rem] opacity-80">Learners</div>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-[0.75rem] opacity-80">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Notes and progress saved as you go
+                </div>
               </div>
-            </motion.div>
+            </div>
+
+            {/* The product, not a picture of it. On its own dark plate so the
+                explainer keeps the ground tone it was designed against. */}
+            <div className="w-full max-w-[560px] mx-auto lg:mx-0 lg:max-w-none">
+              <div
+                className="flex items-center justify-between text-[0.75rem] font-mono mb-3"
+                style={{ color: 'var(--af-ember-ink)', opacity: 0.85 }}
+              >
+                <span>Try it — binary search</span>
+                <span>no sign-up needed</span>
+              </div>
+
+              <div
+                className="rounded-[8px] p-4 sm:p-5"
+                style={{ background: 'var(--af-ground)' }}
+              >
+                <PatternExplainer topicTitle="Searching Algorithms" className="w-full" />
+              </div>
+
+              <p
+                className="text-[0.75rem] mt-3.5"
+                style={{ color: 'var(--af-ember-ink)', opacity: 0.85 }}
+              >
+                Every figure updates as the pattern moves. The same explainer is on
+                each topic once you are in.
+              </p>
+            </div>
+
           </div>
-
-          {/* Visual Content (Laptop/Code) */}
-          <div className="flex-1 w-full max-w-[600px] lg:max-w-none relative hidden md:block">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
-              style={{ perspective: 1000 }}
-              className="relative z-20"
-            >
-              <CodeWindow />
-            </motion.div>
-
-            {/* Floating Elements Background */}
-            <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -top-10 -right-10 bg-[#202020] p-4 rounded-xl border border-white/10 shadow-xl z-10 glass"
-            >
-              <Cpu className="w-8 h-8 text-[#a088ff]" />
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, 20, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-              className="absolute -bottom-5 -left-5 bg-[#202020] p-4 rounded-xl border border-white/10 shadow-xl z-30 glass"
-            >
-              <Terminal className="w-8 h-8 text-[#63e3ff]" />
-            </motion.div>
-          </div>
-
         </div>
-      </motion.div>
-
-      {/* Bottom Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#141414] to-transparent pointer-events-none" />
+      </div>
     </section>
   );
 }
-

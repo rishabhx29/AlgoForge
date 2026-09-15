@@ -46,19 +46,19 @@ interface CommunityForumProps {
 }
 
 const categories = [
-    { id: 'all', label: 'All Topics', icon: Filter, color: '#a088ff' },
-    { id: 'general', label: 'General', icon: MessageCircle, color: '#63e3ff' },
-    { id: 'dsa', label: 'DSA', icon: Code2, color: '#ff8a63' },
-    { id: 'interview', label: 'Interview', icon: Briefcase, color: '#88ff9f' },
-    { id: 'system-design', label: 'System Design', icon: Cpu, color: '#ff88c9' },
-    { id: 'career', label: 'Career', icon: Compass, color: '#ffd700' },
-    { id: 'feedback', label: 'Feedback', icon: HelpCircle, color: '#a0e8ff' }
+    { id: 'all', label: 'All topics', icon: Filter },
+    { id: 'general', label: 'General', icon: MessageCircle },
+    { id: 'dsa', label: 'DSA', icon: Code2 },
+    { id: 'interview', label: 'Interview', icon: Briefcase },
+    { id: 'system-design', label: 'System design', icon: Cpu },
+    { id: 'career', label: 'Career', icon: Compass },
+    { id: 'feedback', label: 'Feedback', icon: HelpCircle }
 ];
 
 const sortOptions = [
     { id: 'newest', label: 'Newest', icon: Clock },
-    { id: 'most-liked', label: 'Most Liked', icon: TrendingUp },
-    { id: 'most-discussed', label: 'Most Discussed', icon: Flame }
+    { id: 'most-liked', label: 'Most liked', icon: TrendingUp },
+    { id: 'most-discussed', label: 'Most discussed', icon: Flame }
 ];
 
 function timeAgo(dateStr: string): string {
@@ -74,9 +74,36 @@ function timeAgo(dateStr: string): string {
     return `${months}mo ago`;
 }
 
-function getCategoryColor(cat: string): string {
-    const found = categories.find(c => c.id === cat);
-    return found?.color || '#a088ff';
+/**
+ * The forum API returns raw Mongo documents, which carry `_id` and no `id`. This component
+ * (and the reply like-handlers) key off `id`, so without normalisation every list item gets
+ * `key={undefined}` — which logs "Each child in a list should have a unique key" and, worse,
+ * makes `post.id === postId` fail so like-toggles never update the row.
+ *
+ * Copies the document with `id` populated from whichever field is present. Typed loosely
+ * because it must accept both the list summary and the detail shapes.
+ */
+function normalizeId<T extends Record<string, any>>(doc: T): T & { id: string } {
+    return { ...doc, id: doc.id ?? doc._id ?? '' };
+}
+
+/** Skeleton mirroring the post-row layout so loading matches the loaded state. */
+function ForumSkeleton() {
+    const widths = [188, 240, 164, 212, 176, 226];
+    return (
+        <div className="ruled" aria-hidden="true">
+            {widths.map((w, i) => (
+                <div key={i} className="flex items-start gap-4 px-3 py-4">
+                    <div className="skeleton w-7 h-7 rounded-[4px] flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <div className="skeleton h-4 rounded-[3px] mb-2" style={{ width: w }} />
+                        <div className="skeleton h-3 rounded-[3px] w-1/2" />
+                    </div>
+                    <div className="skeleton h-4 w-12 rounded-[3px] flex-shrink-0" />
+                </div>
+            ))}
+        </div>
+    );
 }
 
 export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
@@ -124,7 +151,10 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
         setLoading(true);
         try {
             const data = await getPosts(activeCategory, activeSort, currentPage);
-            setPosts(data.posts);
+            // The API returns Mongo documents keyed by `_id`, but the rest of this
+            // component identifies posts by `id` (list keys, like-toggling, detail
+            // navigation). Normalise once at the boundary so no consumer has to care.
+            setPosts((data.posts || []).map(normalizeId));
             setTotalPages(data.totalPages);
         } catch (err) {
             console.error('Failed to fetch posts:', err);
@@ -141,7 +171,11 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
         setDetailLoading(true);
         try {
             const data = await getPost(postId);
-            setSelectedPost(data);
+            setSelectedPost(
+                data
+                    ? { ...normalizeId(data), replies: (data.replies || []).map(normalizeId) }
+                    : data
+            );
         } catch (err) {
             console.error('Failed to fetch post:', err);
         } finally {
@@ -182,7 +216,11 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
         setReplySubmitting(true);
         try {
             const updated = await addReply(selectedPost.id, replyText.trim());
-            setSelectedPost(updated);
+            setSelectedPost(
+                updated
+                    ? { ...normalizeId(updated), replies: (updated.replies || []).map(normalizeId) }
+                    : updated
+            );
             setReplyText('');
         } catch (err) {
             console.error('Failed to add reply:', err);
@@ -232,147 +270,122 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
     if (selectedPost || detailLoading) {
         return (
             <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-                <div className="absolute inset-0 isometric-pattern opacity-20 fixed pointer-events-none" />
-                <div className="max-w-4xl mx-auto relative z-10">
+                <div className="max-w-4xl mx-auto">
                     <Button
                         variant="ghost"
                         onClick={() => { setSelectedPost(null); setReplyText(''); }}
-                        className="mb-6 text-white/60 hover:text-white"
+                        className="mb-6 text-[#b6b1ad] hover:text-[#f1eeea]"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Forum
+                        Back to forum
                     </Button>
 
                     {detailLoading ? (
                         <div className="flex items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 text-[#a088ff] animate-spin" />
+                            <Loader2 className="w-8 h-8 text-[#f0997d] animate-spin" />
                         </div>
                     ) : selectedPost && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
+                        <div>
                             {/* Post Content */}
-                            <div className="glass rounded-3xl p-8 border border-white/5 bg-[#0a0a0a]/60 backdrop-blur-md mb-6">
+                            <div className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] p-8 mb-6">
                                 <div className="flex items-start gap-4 mb-6">
-                                    <div
-                                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-                                        style={{
-                                            background: `${getCategoryColor(selectedPost.category)}20`,
-                                            color: getCategoryColor(selectedPost.category)
-                                        }}
-                                    >
+                                    <div className="w-10 h-10 rounded-[4px] bg-[#2c2b30] flex items-center justify-center font-medium text-[0.75rem] text-[#b6b1ad] flex-shrink-0">
                                         {selectedPost.author?.name?.slice(0, 2).toUpperCase() || '??'}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h1 className="text-2xl font-bold text-white mb-1">
-                                            {selectedPost.isPinned && <Pin className="w-4 h-4 inline mr-2 text-[#ffd700]" />}
+                                        <h1 className="text-[1.5rem] font-medium text-[#f1eeea] tracking-[-0.015em] mb-2">
+                                            {selectedPost.isPinned && <Pin className="w-4 h-4 inline mr-2 text-[#f0997d]" aria-hidden="true" />}
                                             {selectedPost.title}
                                         </h1>
-                                        <div className="flex items-center gap-3 text-sm text-white/50">
-                                            <span className="font-medium text-white/70">{selectedPost.author?.name}</span>
-                                            <span>·</span>
+                                        <div className="flex items-center gap-3 text-[0.75rem] text-[#8f8a85]">
+                                            <span className="font-medium text-[#b6b1ad]">{selectedPost.author?.name}</span>
+                                            <span aria-hidden="true">·</span>
                                             <span>{timeAgo(selectedPost.createdAt)}</span>
-                                            <span>·</span>
-                                            <span
-                                                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                                                style={{
-                                                    background: `${getCategoryColor(selectedPost.category)}20`,
-                                                    color: getCategoryColor(selectedPost.category)
-                                                }}
-                                            >
+                                            <span aria-hidden="true">·</span>
+                                            <span className="text-[#b6b1ad]">
                                                 {selectedPost.category}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <p className="text-white/80 leading-relaxed whitespace-pre-wrap mb-6">
+                                <p className="text-[#f1eeea] text-[0.9375rem] leading-relaxed whitespace-pre-wrap mb-6">
                                     {selectedPost.content}
                                 </p>
 
-                                <div className="flex items-center gap-4 pt-4 border-t border-white/5">
+                                <div className="flex items-center gap-4 pt-4 border-t border-[rgba(241,238,234,0.1)]">
                                     <button
                                         onClick={() => handleLikePost(selectedPost.id)}
-                                        className={`flex items-center gap-2 text-sm transition-colors ${user && selectedPost.likes.includes(user.id)
-                                            ? 'text-red-400'
-                                            : 'text-white/50 hover:text-red-400'
+                                        aria-label="Like post"
+                                        className={`flex items-center gap-2 text-[0.8125rem] transition-colors duration-[var(--af-dur-fast)] ${user && selectedPost.likes.includes(user.id)
+                                            ? 'text-[#d98a76]'
+                                            : 'text-[#8f8a85] hover:text-[#d98a76]'
                                             }`}
                                     >
                                         <Heart className={`w-4 h-4 ${user && selectedPost.likes.includes(user.id) ? 'fill-current' : ''}`} />
-                                        {selectedPost.likes.length}
+                                        <span className="tnum">{selectedPost.likes.length}</span>
                                     </button>
-                                    <span className="flex items-center gap-2 text-sm text-white/50">
+                                    <span className="flex items-center gap-2 text-[0.8125rem] text-[#8f8a85]">
                                         <MessageSquare className="w-4 h-4" />
-                                        {selectedPost.replies.length} replies
+                                        <span className="tnum">{selectedPost.replies.length}</span> replies
                                     </span>
                                 </div>
                             </div>
 
                             {/* Replies */}
-                            <div className="space-y-4 mb-6">
-                                {selectedPost.replies.map((reply, idx) => (
-                                    <motion.div
+                            <div className="ruled mb-6">
+                                {selectedPost.replies.map((reply) => (
+                                    <div
                                         key={reply.id}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="glass rounded-2xl p-5 border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md ml-6"
+                                        className="px-3 py-4"
                                     >
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div
-                                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                                                style={{
-                                                    background: '#a088ff20',
-                                                    color: '#a088ff'
-                                                }}
-                                            >
+                                            <div className="w-7 h-7 rounded-[4px] bg-[#2c2b30] flex items-center justify-center text-[0.75rem] font-medium text-[#b6b1ad]">
                                                 {reply.author?.name?.slice(0, 2).toUpperCase() || '??'}
                                             </div>
                                             <div>
-                                                <span className="text-white/80 text-sm font-medium">{reply.author?.name}</span>
-                                                <span className="text-white/30 text-xs ml-2">{timeAgo(reply.createdAt)}</span>
+                                                <span className="text-[#f1eeea] text-[0.8125rem] font-medium">{reply.author?.name}</span>
+                                                <span className="text-[#8f8a85] text-[0.75rem] ml-2">{timeAgo(reply.createdAt)}</span>
                                             </div>
                                         </div>
-                                        <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap mb-3">
+                                        <p className="text-[#b6b1ad] text-[0.875rem] leading-relaxed whitespace-pre-wrap mb-3">
                                             {reply.content}
                                         </p>
                                         <button
                                             onClick={() => handleLikeReply(reply.id)}
-                                            className={`flex items-center gap-1.5 text-xs transition-colors ${user && reply.likes.includes(user.id)
-                                                ? 'text-red-400'
-                                                : 'text-white/40 hover:text-red-400'
+                                            aria-label="Like reply"
+                                            className={`flex items-center gap-1.5 text-[0.75rem] transition-colors duration-[var(--af-dur-fast)] ${user && reply.likes.includes(user.id)
+                                                ? 'text-[#d98a76]'
+                                                : 'text-[#8f8a85] hover:text-[#d98a76]'
                                                 }`}
                                         >
                                             <Heart className={`w-3 h-3 ${user && reply.likes.includes(user.id) ? 'fill-current' : ''}`} />
-                                            {reply.likes.length}
+                                            <span className="tnum">{reply.likes.length}</span>
                                         </button>
-                                    </motion.div>
+                                    </div>
                                 ))}
                             </div>
 
                             {/* Reply Input */}
-                            <div className="glass rounded-2xl p-5 border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md">
+                            <div className="bg-[#222225] border border-[rgba(241,238,234,0.1)] rounded-[6px] p-5">
                                 {user ? (
                                     <div className="flex gap-3">
-                                        <div
-                                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                                            style={{ background: '#a088ff20', color: '#a088ff' }}
-                                        >
+                                        <div className="w-7 h-7 rounded-[4px] bg-[#2c2b30] flex items-center justify-center text-[0.75rem] font-medium text-[#b6b1ad] flex-shrink-0">
                                             {user.name?.slice(0, 2).toUpperCase()}
                                         </div>
                                         <div className="flex-1">
                                             <textarea
                                                 value={replyText}
                                                 onChange={e => setReplyText(e.target.value)}
-                                                placeholder="Write a reply..."
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#a088ff]/50 resize-none min-h-[80px]"
+                                                placeholder="Write a reply…"
+                                                aria-label="Write a reply"
+                                                className="w-full bg-[#19191b] border border-[rgba(241,238,234,0.1)] rounded-[6px] px-4 py-3 text-[#f1eeea] text-[0.875rem] placeholder:text-[#8f8a85] focus:outline-none focus-visible:border-[#f0997d] resize-none min-h-[80px]"
                                             />
                                             <div className="flex justify-end mt-2">
                                                 <Button
                                                     onClick={handleReply}
                                                     disabled={!replyText.trim() || replySubmitting}
-                                                    className="bg-[#a088ff] hover:bg-[#8f76fa] text-white text-sm"
+                                                    className="bg-[#f0997d] text-[#19191b] hover:bg-[#ffb197] active:scale-[0.98] text-[0.8125rem] font-medium rounded-[4px] transition-colors duration-[var(--af-dur-fast)]"
                                                     size="sm"
                                                 >
                                                     {replySubmitting ? (
@@ -387,18 +400,18 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                     </div>
                                 ) : (
                                     <div className="text-center py-4">
-                                        <p className="text-white/50 text-sm mb-3">Sign in to join the conversation</p>
+                                        <p className="text-[#b6b1ad] text-[0.875rem] mb-3">Sign in to join the conversation</p>
                                         <Button
                                             onClick={() => onAuthClick('login')}
-                                            className="bg-[#a088ff] hover:bg-[#8f76fa] text-white text-sm"
+                                            className="bg-[#f0997d] text-[#19191b] hover:bg-[#ffb197] active:scale-[0.98] text-[0.8125rem] font-medium rounded-[4px] transition-colors duration-[var(--af-dur-fast)]"
                                             size="sm"
                                         >
-                                            Sign In
+                                            Sign in
                                         </Button>
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        </div>
                     )}
                 </div>
             </div>
@@ -408,54 +421,39 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
     // Forum list view
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-            <div className="absolute inset-0 isometric-pattern opacity-20 fixed pointer-events-none" />
-
-            <div className="max-w-7xl mx-auto relative z-10">
+            <div className="max-w-7xl mx-auto">
                 <Button
                     variant="ghost"
                     onClick={onBack}
-                    className="mb-6 text-white/60 hover:text-white"
+                    className="mb-6 text-[#b6b1ad] hover:text-[#f1eeea]"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Home
+                    Back to home
                 </Button>
 
                 {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-10"
-                >
-                    <h1 className="font-display text-4xl sm:text-5xl text-white mb-3">
-                        Community <span className="gradient-text">Forum</span>
+                <div className="mb-8 pb-4 border-b border-[rgba(241,238,234,0.2)]">
+                    <h1 className="text-3xl sm:text-4xl font-medium text-[#f1eeea] tracking-[-0.03em] mb-3">
+                        Community forum
                     </h1>
-                    <p className="text-white/60 text-lg max-w-2xl mx-auto">
+                    <p className="text-[0.9375rem] text-[#b6b1ad] leading-relaxed max-w-2xl">
                         Ask questions, share solutions, and learn from fellow developers.
                     </p>
-                </motion.div>
+                </div>
 
                 {/* Top Bar: Categories + Sort + New Post */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="mb-8"
-                >
+                <div className="pb-4 mb-6 border-b border-[rgba(241,238,234,0.2)]">
                     {/* Category Tabs */}
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-1 mb-4" role="group" aria-label="Filter by category">
                         {categories.map(cat => (
                             <button
                                 key={cat.id}
                                 onClick={() => { setActiveCategory(cat.id); setCurrentPage(1); }}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${activeCategory === cat.id
-                                    ? 'text-white shadow-lg'
-                                    : 'text-white/50 hover:text-white/80 bg-white/5 hover:bg-white/10'
+                                aria-pressed={activeCategory === cat.id}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[0.8125rem] font-medium transition-colors duration-[var(--af-dur-fast)] ${activeCategory === cat.id
+                                    ? 'bg-[#f0997d] text-[#19191b]'
+                                    : 'text-[#b6b1ad] hover:text-[#f1eeea] bg-[#222225]'
                                     }`}
-                                style={activeCategory === cat.id ? {
-                                    background: `${cat.color}30`,
-                                    color: cat.color,
-                                    boxShadow: `0 0 20px ${cat.color}20`
-                                } : {}}
                             >
                                 <cat.icon className="w-3.5 h-3.5" />
                                 {cat.label}
@@ -464,15 +462,16 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                     </div>
 
                     {/* Sort + New Post */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex gap-1" role="group" aria-label="Sort posts">
                             {sortOptions.map(sort => (
                                 <button
                                     key={sort.id}
                                     onClick={() => { setActiveSort(sort.id); setCurrentPage(1); }}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeSort === sort.id
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-white/40 hover:text-white/60'
+                                    aria-pressed={activeSort === sort.id}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-[0.75rem] font-medium transition-colors duration-[var(--af-dur-fast)] ${activeSort === sort.id
+                                        ? 'bg-[#2c2b30] text-[#f1eeea]'
+                                        : 'text-[#8f8a85] hover:text-[#f1eeea]'
                                         }`}
                                 >
                                     <sort.icon className="w-3 h-3" />
@@ -486,34 +485,36 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                 if (!user) { onAuthClick('login'); return; }
                                 setShowCreateForm(true);
                             }}
-                            className="bg-[#a088ff] hover:bg-[#8f76fa] text-white text-sm"
+                            className="bg-[#f0997d] text-[#19191b] hover:bg-[#ffb197] active:scale-[0.98] text-[0.8125rem] font-medium rounded-[4px] transition-colors duration-[var(--af-dur-fast)]"
                             size="sm"
                         >
                             <Plus className="w-4 h-4 mr-1" />
-                            New Post
+                            New post
                         </Button>
                     </div>
-                </motion.div>
+                </div>
 
                 {/* Create Post Form */}
                 <AnimatePresence>
                     {showCreateForm && (
                         <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                             className="overflow-hidden mb-6"
                         >
                             <form
                                 onSubmit={handleSubmit(handleCreatePost)}
-                                className="glass rounded-2xl p-6 border border-[#a088ff]/20 bg-[#0a0a0a]/60 backdrop-blur-md"
+                                className="bg-[#222225] rounded-[6px] p-6 border border-[rgba(241,238,234,0.1)]"
                             >
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-white">Create New Post</h3>
+                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[rgba(241,238,234,0.1)]">
+                                    <h3 className="text-[1.125rem] font-medium text-[#f1eeea]">Create new post</h3>
                                     <button
                                         type="button"
                                         onClick={() => { setShowCreateForm(false); reset(); }}
-                                        className="text-white/40 hover:text-white"
+                                        aria-label="Close create post form"
+                                        className="p-1.5 icon-btn text-[#8f8a85] hover:text-[#f1eeea]"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -522,17 +523,18 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                 <div className="mb-3">
                                     <input
                                         {...register('title')}
-                                        placeholder="Post title..."
+                                        placeholder="Post title…"
+                                        aria-label="Post title"
                                         maxLength={TITLE_MAX}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#a088ff]/50"
+                                        className="w-full bg-[#19191b] border border-[rgba(241,238,234,0.1)] rounded-[6px] px-4 py-3 text-[#f1eeea] placeholder:text-[#8f8a85] focus:outline-none focus-visible:border-[#f0997d]"
                                     />
                                     <div className="flex justify-between mt-1.5 px-1">
                                         {errors.title ? (
-                                            <span className="text-red-400 text-xs">{errors.title.message}</span>
+                                            <span className="text-[#d98a76] text-[0.75rem]">{errors.title.message}</span>
                                         ) : (
                                             <span />
                                         )}
-                                        <span className={`text-xs ${watchTitle.length >= TITLE_MAX ? 'text-red-400' : 'text-white/30'}`}>
+                                        <span className={`text-[0.75rem] tnum ${watchTitle.length >= TITLE_MAX ? 'text-[#d98a76]' : 'text-[#8f8a85]'}`}>
                                             {watchTitle.length} / {TITLE_MAX}
                                         </span>
                                     </div>
@@ -541,17 +543,18 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                 <div className="mb-3">
                                     <textarea
                                         {...register('content')}
-                                        placeholder="What's on your mind? Share your thoughts, questions, or solutions..."
+                                        placeholder="What's on your mind? Share your thoughts, questions, or solutions…"
+                                        aria-label="Post content"
                                         maxLength={CONTENT_MAX}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-[#a088ff]/50 resize-none min-h-[120px]"
+                                        className="w-full bg-[#19191b] border border-[rgba(241,238,234,0.1)] rounded-[6px] px-4 py-3 text-[#f1eeea] text-[0.875rem] placeholder:text-[#8f8a85] focus:outline-none focus-visible:border-[#f0997d] resize-none min-h-[120px]"
                                     />
                                     <div className="flex justify-between mt-1.5 px-1">
                                         {errors.content ? (
-                                            <span className="text-red-400 text-xs">{errors.content.message}</span>
+                                            <span className="text-[#d98a76] text-[0.75rem]">{errors.content.message}</span>
                                         ) : (
                                             <span />
                                         )}
-                                        <span className={`text-xs ${watchContent.length >= CONTENT_MAX ? 'text-red-400' : 'text-white/30'}`}>
+                                        <span className={`text-[0.75rem] tnum ${watchContent.length >= CONTENT_MAX ? 'text-[#d98a76]' : 'text-[#8f8a85]'}`}>
                                             {watchContent.length.toLocaleString()} / {CONTENT_MAX.toLocaleString()}
                                         </span>
                                     </div>
@@ -559,13 +562,14 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
 
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-white/40 text-xs">Category:</span>
+                                        <span className="text-[#8f8a85] text-[0.75rem]">Category:</span>
                                         <select
                                             {...register('category')}
-                                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#a088ff]/50 appearance-none cursor-pointer"
+                                            aria-label="Category"
+                                            className="bg-[#19191b] border border-[rgba(241,238,234,0.1)] rounded-[4px] px-3 py-1.5 text-[#f1eeea] text-[0.8125rem] focus:outline-none focus-visible:border-[#f0997d] appearance-none cursor-pointer"
                                         >
                                             {categories.filter(c => c.id !== 'all').map(c => (
-                                                <option key={c.id} value={c.id} className="bg-[#1a1a1a]">{c.label}</option>
+                                                <option key={c.id} value={c.id} className="bg-[#222225]">{c.label}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -573,7 +577,7 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                     <Button
                                         type="submit"
                                         disabled={!isValid || createSubmitting}
-                                        className="bg-[#a088ff] hover:bg-[#8f76fa] text-white text-sm"
+                                        className="bg-[#f0997d] text-[#19191b] hover:bg-[#ffb197] active:scale-[0.98] text-[0.8125rem] font-medium rounded-[4px] transition-colors duration-[var(--af-dur-fast)]"
                                         size="sm"
                                     >
                                         {createSubmitting ? (
@@ -591,103 +595,81 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
 
                 {/* Posts List */}
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 text-[#a088ff] animate-spin" />
-                    </div>
+                    <ForumSkeleton />
                 ) : posts.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center py-20"
-                    >
-                        <MessageSquare className="w-16 h-16 text-white/20 mx-auto mb-4" />
-                        <h3 className="text-xl text-white/60 mb-2">No posts yet</h3>
-                        <p className="text-white/40 text-sm mb-6">Be the first to start a discussion!</p>
+                    <div className="text-center py-20">
+                        <MessageSquare className="w-6 h-6 text-[#3a393e] mx-auto mb-4" />
+                        <h3 className="text-[1.125rem] text-[#b6b1ad] mb-2">No posts yet</h3>
+                        <p className="text-[#8f8a85] text-[0.8125rem] mb-6">Be the first to start a discussion.</p>
                         <Button
                             onClick={() => {
                                 if (!user) { onAuthClick('login'); return; }
                                 setShowCreateForm(true);
                             }}
-                            className="bg-[#a088ff] hover:bg-[#8f76fa] text-white"
+                            className="bg-[#f0997d] text-[#19191b] hover:bg-[#ffb197] active:scale-[0.98] text-[0.8125rem] font-medium rounded-[4px] transition-colors duration-[var(--af-dur-fast)]"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            Create First Post
+                            Create first post
                         </Button>
-                    </motion.div>
+                    </div>
                 ) : (
-                    <div className="space-y-3">
-                        {posts.map((post, index) => (
-                            <motion.div
+                    <div className="ruled">
+                        {posts.map((post) => (
+                            <div
                                 key={post.id}
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.04 }}
                                 onClick={() => handleOpenPost(post.id)}
-                                className="glass rounded-2xl p-5 border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-md cursor-pointer hover:border-white/10 hover:bg-[#0a0a0a]/60 transition-all group"
+                                className="flex items-start gap-4 px-3 py-4 cursor-pointer row-interactive"
                             >
-                                <div className="flex items-start gap-4">
-                                    {/* Author Avatar */}
-                                    <div
-                                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0"
-                                        style={{
-                                            background: `${getCategoryColor(post.category)}20`,
-                                            color: getCategoryColor(post.category)
-                                        }}
-                                    >
-                                        {post.authorInfo?.name?.slice(0, 2).toUpperCase() || '??'}
+                                {/* Author Avatar — square */}
+                                <div className="w-9 h-9 rounded-[4px] bg-[#2c2b30] flex items-center justify-center font-medium text-[0.75rem] text-[#b6b1ad] flex-shrink-0">
+                                    {post.authorInfo?.name?.slice(0, 2).toUpperCase() || '??'}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    {/* Title */}
+                                    <div className="flex items-center gap-2 mb-1">
+                                        {post.isPinned && <Pin className="w-3.5 h-3.5 text-[#f0997d] flex-shrink-0" aria-hidden="true" />}
+                                        <h3 className="text-[#f1eeea] font-medium truncate">
+                                            {post.title}
+                                        </h3>
                                     </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        {/* Title */}
-                                        <div className="flex items-center gap-2 mb-1">
-                                            {post.isPinned && <Pin className="w-3.5 h-3.5 text-[#ffd700] flex-shrink-0" />}
-                                            <h3 className="text-white font-semibold group-hover:text-[#a088ff] transition-colors truncate">
-                                                {post.title}
-                                            </h3>
-                                        </div>
+                                    {/* Author + time + category */}
+                                    <div className="flex items-center gap-2 text-[0.75rem] text-[#8f8a85] mb-2">
+                                        <span className="text-[#b6b1ad]">{post.authorInfo?.name}</span>
+                                        <span aria-hidden="true">·</span>
+                                        <span>{timeAgo(post.createdAt)}</span>
+                                        <span aria-hidden="true">·</span>
+                                        <span className="text-[#8f8a85]">
+                                            {post.category}
+                                        </span>
+                                    </div>
 
-                                        {/* Author + time + category */}
-                                        <div className="flex items-center gap-2 text-xs text-white/40 mb-2">
-                                            <span className="text-white/60">{post.authorInfo?.name}</span>
-                                            <span>·</span>
-                                            <span>{timeAgo(post.createdAt)}</span>
-                                            <span>·</span>
-                                            <span
-                                                className="px-1.5 py-0.5 rounded-full text-xs"
-                                                style={{
-                                                    background: `${getCategoryColor(post.category)}15`,
-                                                    color: getCategoryColor(post.category)
-                                                }}
-                                            >
-                                                {post.category}
-                                            </span>
-                                        </div>
+                                    {/* Snippet */}
+                                    <p className="text-[#b6b1ad] text-[0.8125rem] leading-relaxed line-clamp-2 mb-3">
+                                        {post.content}
+                                    </p>
 
-                                        {/* Snippet */}
-                                        <p className="text-white/50 text-sm line-clamp-2 mb-3">
-                                            {post.content}
-                                        </p>
-
-                                        {/* Stats */}
-                                        <div className="flex items-center gap-4">
-                                            <button
-                                                onClick={(e) => handleLikePost(post.id, e)}
-                                                className={`flex items-center gap-1.5 text-xs transition-colors ${user && post.likes.includes(user.id)
-                                                    ? 'text-red-400'
-                                                    : 'text-white/40 hover:text-red-400'
-                                                    }`}
-                                            >
-                                                <Heart className={`w-3.5 h-3.5 ${user && post.likes.includes(user.id) ? 'fill-current' : ''}`} />
-                                                {post.likesCount}
-                                            </button>
-                                            <span className="flex items-center gap-1.5 text-xs text-white/40">
-                                                <MessageSquare className="w-3.5 h-3.5" />
-                                                {post.repliesCount}
-                                            </span>
-                                        </div>
+                                    {/* Stats */}
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={(e) => handleLikePost(post.id, e)}
+                                            aria-label={`Like ${post.title}`}
+                                            className={`flex items-center gap-1.5 text-[0.75rem] transition-colors duration-[var(--af-dur-fast)] ${user && post.likes.includes(user.id)
+                                                ? 'text-[#d98a76]'
+                                                : 'text-[#8f8a85] hover:text-[#d98a76]'
+                                                }`}
+                                        >
+                                            <Heart className={`w-3.5 h-3.5 ${user && post.likes.includes(user.id) ? 'fill-current' : ''}`} />
+                                            <span className="tnum">{post.likesCount}</span>
+                                        </button>
+                                        <span className="flex items-center gap-1.5 text-[0.75rem] text-[#8f8a85]">
+                                            <MessageSquare className="w-3.5 h-3.5" />
+                                            <span className="tnum">{post.repliesCount}</span>
+                                        </span>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 )}
@@ -700,7 +682,8 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                             size="sm"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(p => p - 1)}
-                            className="text-white/50 hover:text-white"
+                            aria-label="Previous page"
+                            className="text-[#b6b1ad] hover:text-[#f1eeea]"
                         >
                             <ChevronUp className="w-4 h-4 rotate-[-90deg]" />
                         </Button>
@@ -710,9 +693,11 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
-                                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                                        ? 'bg-[#a088ff] text-white'
-                                        : 'text-white/40 hover:text-white hover:bg-white/10'
+                                    aria-label={`Page ${page}`}
+                                    aria-current={currentPage === page ? 'page' : undefined}
+                                    className={`w-8 h-8 rounded-[4px] text-[0.8125rem] font-medium tnum transition-colors duration-[var(--af-dur-fast)] ${currentPage === page
+                                        ? 'bg-[#f0997d] text-[#19191b]'
+                                        : 'text-[#b6b1ad] hover:text-[#f1eeea] hover:bg-[#2c2b30]'
                                         }`}
                                 >
                                     {page}
@@ -724,7 +709,8 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                             size="sm"
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(p => p + 1)}
-                            className="text-white/50 hover:text-white"
+                            aria-label="Next page"
+                            className="text-[#b6b1ad] hover:text-[#f1eeea]"
                         >
                             <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
                         </Button>

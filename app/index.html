@@ -11,20 +11,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://algoforge-2-0.onrender.com">
 
-    <!-- Load Google Fonts asynchronously via link tags instead of blocking CSS @import -->
-    <link href="https://fonts.googleapis.com/css2?family=Jersey+15&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Load Google Fonts asynchronously via link tags instead of blocking CSS @import.
+         DM Sans = body/UI face (Pattern Studio). Space Grotesk = display/headings.
+         JetBrains Mono = code, test output, figures. -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
 
-    <!-- Minimal inline skeleton CSS to prevent white flash before index.css loads -->
+    <!-- Minimal inline skeleton CSS to prevent a white flash before index.css loads.
+         Must match --af-ground (#19191b) or the flash is visible. -->
     <style>
       body, html {
         margin: 0;
         padding: 0;
-        background-color: #141414; /* var(--background) */
-        color: #ffffff;
+        background-color: #19191b; /* --af-ground */
+        color: #f1eeea;            /* --af-ink */
       }
       #root {
         min-height: 100vh;
-        background-color: #141414;
+        background-color: #19191b;
       }
     </style>
   </head>
