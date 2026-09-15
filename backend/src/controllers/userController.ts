@@ -11,14 +11,50 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
         let pipeline: any[] = [];
 
+        // The solved count must come from the UserProgress collection, not from the
+        // denormalised `solvedProblems` array on the user document.
+        //
+        // That array is only maintained for accounts created after the data migration.
+        // Measured 2026-09-13: just 3 of 33 users had a populated array, so the two
+        // highest scorers both displayed "0 solved" (Tanush had 37, rishabh 43). The
+        // column was wrong for 30 of 33 users.
+        //
+        // UserProgress is the authoritative superset — verified that 0 problemIds exist
+        // only in the array while 96 exist only in UserProgress. We still take the max of
+        // both sources so a legacy document carrying only the array is not undercounted.
+        pipeline.push({
+            $lookup: {
+                from: 'UserProgress',
+                let: { uid: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$user_id', '$$uid'] },
+                                    { $eq: ['$status', 'SOLVED'] }
+                                ]
+                            }
+                        }
+                    },
+                    { $count: 'n' }
+                ],
+                as: 'progressSolved'
+            }
+        });
+
         pipeline.push({
             $project: {
                 name: 1,
                 xp_points: 1,
                 streak_days: 1,
-                solvedProblems: 1,
                 avatar: 1,
-                solvedCount: { $size: { $ifNull: ["$solvedProblems", []] } }
+                solvedCount: {
+                    $max: [
+                        { $size: { $ifNull: ["$solvedProblems", []] } },
+                        { $ifNull: [{ $arrayElemAt: ["$progressSolved.n", 0] }, 0] }
+                    ]
+                }
             }
         });
 
@@ -141,6 +177,26 @@ export const getUserProfile = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Count SOLVED rows from UserProgress, the authoritative record — and
+        // take the max against the denormalised `solvedProblems` array so a
+        // legacy document carrying only the array is not undercounted. This
+        // mirrors getLeaderboard exactly.
+        //
+        // Reading `solvedProblems.length` alone was wrong: that array is
+        // maintained for only a few accounts, so the profile contradicted the
+        // leaderboard for the same user. Measured 2026-09-15: clicking the
+        // board's #2 (37 solved) opened a profile claiming 0.
+        const progressSolved = await prisma.userProgress.count({
+            where: { user_id: userId, status: 'SOLVED' },
+        });
+        const solved = Math.max(progressSolved, user.solvedProblems?.length || 0);
+
+        // Rank by XP, which is the leaderboard's default ordering. Stated
+        // explicitly so the figure is never read as a rank in some other metric.
+        const higherXp = await prisma.user.count({
+            where: { xp_points: { gt: user.xp_points || 0 } },
+        });
+
         res.status(200).json({
             id: user.id,
             name: user.name,
@@ -148,7 +204,8 @@ export const getUserProfile = async (req: Request, res: Response) => {
             bio: user.bio || '',
             xp: user.xp_points || 0,
             streak: user.streak_days || 0,
-            solved: user.solvedProblems?.length || 0,
+            solved,
+            rank: higherXp + 1,
             level: calculateLevel(user.xp_points || 0),
             memberSince: user.createdAt,
         });

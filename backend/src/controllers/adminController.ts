@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { rejectInvalidId } from '../utils/idGuard';
 import { prisma } from '../config/db';
 
 // ========== DASHBOARD STATS ==========
@@ -84,6 +85,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
 export const editUser = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const { name, xp_points, streak_days, role } = req.body;
         const updates: any = {};
 
@@ -112,6 +114,7 @@ export const editUser = async (req: Request, res: Response) => {
 
 export const toggleBanUser = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const user = await prisma.user.findUnique({ where: { id: req.params.id } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -135,6 +138,7 @@ export const toggleBanUser = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const user = await prisma.user.findUnique({ where: { id: req.params.id } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -200,6 +204,7 @@ export const addProblem = async (req: Request, res: Response) => {
 
 export const editProblem = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const { title, difficulty, video_link, problem_link, description, tags, order_index } = req.body;
         const updates: any = {};
 
@@ -225,6 +230,7 @@ export const editProblem = async (req: Request, res: Response) => {
 
 export const deleteProblem = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const problem = await prisma.problem.findUnique({ where: { id: req.params.id } });
         if (!problem) {
             return res.status(404).json({ message: 'Problem not found' });
@@ -244,6 +250,7 @@ export const deleteProblem = async (req: Request, res: Response) => {
 
 export const deleteForumPost = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const post = await prisma.forumPost.findUnique({ where: { id: req.params.id } });
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
@@ -261,6 +268,7 @@ export const deleteForumPost = async (req: Request, res: Response) => {
 
 export const editForumPost = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const { title, content, category, isPinned } = req.body;
         const updates: any = {};
 
@@ -284,6 +292,7 @@ export const editForumPost = async (req: Request, res: Response) => {
 
 export const deleteForumReply = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.replyId, res)) return;
         const reply = await prisma.reply.findUnique({ where: { id: req.params.replyId } });
         if (!reply) {
             return res.status(404).json({ message: 'Reply not found' });

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { rejectInvalidId } from '../utils/idGuard';
 
 export const getPosts = async (req: Request, res: Response) => {
     try {
@@ -110,6 +111,7 @@ export const getPosts = async (req: Request, res: Response) => {
 
 export const getPost = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const post = await prisma.forumPost.findUnique({
             where: { id: req.params.id },
             include: {
@@ -217,6 +219,7 @@ export const createPost = async (req: Request, res: Response) => {
 
 export const addReply = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const { content } = req.body;
 
         if (!content) {
@@ -264,6 +267,7 @@ export const addReply = async (req: Request, res: Response) => {
 
 export const toggleLike = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.id, res)) return;
         const post = await prisma.forumPost.findUnique({ where: { id: req.params.id } });
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
@@ -293,6 +297,7 @@ export const toggleLike = async (req: Request, res: Response) => {
 
 export const toggleReplyLike = async (req: Request, res: Response) => {
     try {
+        if (rejectInvalidId(req.params.replyId, res)) return;
         const reply = await prisma.reply.findUnique({ where: { id: req.params.replyId } });
         if (!reply) {
             return res.status(404).json({ message: 'Reply not found' });

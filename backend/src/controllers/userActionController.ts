@@ -1,6 +1,14 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { SOLVE_XP } from '../config/xpConfig';
+import { isUniqueViolation } from '../utils/prismaErrors';
+
+/** The statuses the client may set. Mirrors the union in `app/src/api/userActions.ts`. */
+const VALID_STATUSES = ['TODO', 'SOLVED', 'ATTEMPTED'] as const;
+type ValidStatus = (typeof VALID_STATUSES)[number];
+
+const isStatus = (v: unknown): v is ValidStatus =>
+    typeof v === 'string' && (VALID_STATUSES as readonly string[]).includes(v);
 
 export const updateProblemStatus = async (req: Request | any, res: Response) => {
     try {
@@ -8,30 +16,72 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
         const { status } = req.body;
         const userId = req.user.id;
 
-        let progress = await prisma.userProgress.findUnique({
-            where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
-        });
-        const previousStatus = progress ? progress.status : 'TODO';
-
-        if (progress) {
-            progress = await prisma.userProgress.update({
-                where: { id: progress.id },
-                data: { status }
+        if (!isStatus(status)) {
+            res.status(400).json({
+                message: `status must be one of: ${VALID_STATUSES.join(', ')}`
             });
-        } else {
-            progress = await prisma.userProgress.create({
+            return;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Awarding XP exactly once under concurrency
+        // ─────────────────────────────────────────────────────────────────────────
+        // The previous shape read the current status, wrote the new one, then decided
+        // whether to award XP. That is check-then-act, and it cannot be correct under
+        // concurrency: N simultaneous requests all read the same pre-transition value,
+        // all conclude "this is a real transition", and all award XP. Measured: six
+        // concurrent SOLVED writes on one problem awarded 150 XP instead of 25.
+        //
+        // The fix is to let the DATABASE decide, with one conditional write whose filter
+        // encodes the transition that carries an XP consequence. Exactly one concurrent
+        // request can match it; the rest match zero rows and award nothing.
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // 1. Ensure the row exists. Concurrent first-writes collide on the
+        //    `user_id_problem_id_unique` index; the loser is expected, not an error.
+        try {
+            await prisma.userProgress.create({
                 data: {
                     user_id: userId,
                     problem_id: problemId,
-                    status,
+                    status: 'TODO',
                     is_bookmarked: false,
                     notes: ''
                 }
             });
+        } catch (error) {
+            if (!isUniqueViolation(error)) throw error;
         }
 
+        // 2. Apply the status AND claim the XP delta in one atomic operation.
+        //    `updateMany` reports how many documents it changed — precisely the "did
+        //    THIS request perform the transition?" signal we need, and unlike a read it
+        //    cannot be observed by two requests at the same time.
+        const claim = await prisma.userProgress.updateMany({
+            where: {
+                user_id: userId,
+                problem_id: problemId,
+                status: status === 'SOLVED' ? { not: 'SOLVED' } : 'SOLVED'
+            },
+            data: { status }
+        });
+
+        // 3. When no XP-relevant transition occurred the status still has to be written,
+        //    but only for a non-SOLVED target: a SOLVED target that did not match is
+        //    already SOLVED, so there is nothing to write.
+        if (claim.count === 0 && status !== 'SOLVED') {
+            await prisma.userProgress.updateMany({
+                where: { user_id: userId, problem_id: problemId },
+                data: { status }
+            });
+        }
+
+        // Only the single request that won the claim above may touch XP, the solved
+        // list, the streak, or the activity log.
+        const xpDelta = claim.count === 1 ? (status === 'SOLVED' ? SOLVE_XP : -SOLVE_XP) : 0;
+
         // Sync with User model for Leaderboard & Profile
-        if (status === 'SOLVED' && previousStatus !== 'SOLVED') {
+        if (xpDelta > 0) {
             const userDoc = await prisma.user.findUnique({ where: { id: userId } });
             if (userDoc) {
                 // ─────────────────────────────────────────────
@@ -84,7 +134,7 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
                     }
                 });
             }
-        } else if (status !== 'SOLVED' && previousStatus === 'SOLVED') {
+        } else if (xpDelta < 0) {
             const userDoc = await prisma.user.findUnique({ where: { id: userId } });
             if (userDoc) {
                 const updatedSolvedProblems = userDoc.solvedProblems.filter(p => p.problemId !== problemId);
@@ -98,6 +148,11 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
             }
         }
 
+        // Re-read so the response is the committed row, whatever branch wrote it.
+        const progress = await prisma.userProgress.findUnique({
+            where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
+        });
+
         res.json(progress);
     } catch (error) {
         console.error("Error updating status:", error);
@@ -110,29 +165,50 @@ export const toggleBookmark = async (req: Request | any, res: Response) => {
         const { problemId } = req.params;
         const userId = req.user.id;
 
-        let progress = await prisma.userProgress.findUnique({
+        const existing = await prisma.userProgress.findUnique({
             where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
         });
-        
-        let isBookmarked = false;
 
-        if (progress) {
+        let progress;
+        let isBookmarked;
+
+        if (existing) {
             progress = await prisma.userProgress.update({
-                where: { id: progress.id },
-                data: { is_bookmarked: !progress.is_bookmarked }
+                where: { id: existing.id },
+                data: { is_bookmarked: !existing.is_bookmarked }
             });
             isBookmarked = progress.is_bookmarked;
         } else {
-            progress = await prisma.userProgress.create({
-                data: {
-                    user_id: userId,
-                    problem_id: problemId,
-                    status: 'TODO',
-                    is_bookmarked: true,
-                    notes: ''
-                }
-            });
-            isBookmarked = true;
+            try {
+                progress = await prisma.userProgress.create({
+                    data: {
+                        user_id: userId,
+                        problem_id: problemId,
+                        status: 'TODO',
+                        is_bookmarked: true,
+                        notes: ''
+                    }
+                });
+                isBookmarked = true;
+            } catch (error) {
+                // `upsert` cannot express a toggle — the value written depends on the value
+                // read — so this path keeps the read and recovers from the race instead.
+                // A concurrent request may have created the row between our read and our
+                // create; with `user_id_problem_id_unique` in place that raises P2002.
+                // Re-read the row the winner wrote and toggle from its real current value.
+                if (!isUniqueViolation(error)) throw error;
+
+                const winner = await prisma.userProgress.findUnique({
+                    where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
+                });
+                if (!winner) throw error;
+
+                progress = await prisma.userProgress.update({
+                    where: { id: winner.id },
+                    data: { is_bookmarked: !winner.is_bookmarked }
+                });
+                isBookmarked = progress.is_bookmarked;
+            }
         }
 
         // Sync with User model
@@ -163,29 +239,23 @@ export const updateNotes = async (req: Request | any, res: Response) => {
         const { notes } = req.body;
         const userId = req.user.id;
 
-        let progress = await prisma.userProgress.findUnique({
-            where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
+        // No pre-read needed — nothing here depends on the previous value, so `upsert`
+        // replaces the whole check-then-insert block with one atomic operation.
+        const progress = await prisma.userProgress.upsert({
+            where: { user_id_problem_id: { user_id: userId, problem_id: problemId } },
+            update: { notes },
+            create: {
+                user_id: userId,
+                problem_id: problemId,
+                status: 'TODO',
+                is_bookmarked: false,
+                notes
+            }
         });
-
-        if (progress) {
-            progress = await prisma.userProgress.update({
-                where: { id: progress.id },
-                data: { notes }
-            });
-        } else {
-            progress = await prisma.userProgress.create({
-                data: {
-                    user_id: userId,
-                    problem_id: problemId,
-                    status: 'TODO',
-                    is_bookmarked: false,
-                    notes
-                }
-            });
-        }
 
         res.json(progress);
     } catch (error) {
+        console.error("Error updating notes:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

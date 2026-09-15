@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../config/db';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/env';
+import { isUniqueViolation } from '../utils/prismaErrors';
 
 const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
@@ -34,13 +35,27 @@ export const registerUser = async (req: Request, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword
+        // The pre-check above is racy: two concurrent signups can both pass it. The
+        // `email_unique` index makes the loser fail with P2002 rather than silently
+        // creating a duplicate — so surface the same "already exists" answer the
+        // pre-check would have given, instead of letting it fall through to the
+        // catch-all as a 500.
+        let user;
+        try {
+            user = await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword
+                }
+            });
+        } catch (error) {
+            if (isUniqueViolation(error, 'email')) {
+                res.status(400).json({ message: 'User already exists' });
+                return;
             }
-        });
+            throw error;
+        }
 
         if (user) {
             res.status(201).json({
@@ -141,15 +156,31 @@ export const googleAuth = async (req: Request, res: Response) => {
             }
         } else {
             isNewUser = true;
-            user = await prisma.user.create({
-                data: {
-                    name: name || 'Google User',
-                    email,
-                    googleId,
-                    avatar,
-                    password: ''
-                }
-            });
+            try {
+                user = await prisma.user.create({
+                    data: {
+                        name: name || 'Google User',
+                        email,
+                        googleId,
+                        avatar,
+                        password: ''
+                    }
+                });
+            } catch (error) {
+                // Two concurrent Google sign-ins for the same account both pass the
+                // `findUnique` above and race to insert. With `email_unique` and
+                // `googleId_unique_sparse` now in place, the loser gets P2002 instead of
+                // creating a duplicate — so recover by re-reading the row the winner just
+                // wrote. That makes the whole flow idempotent, which is what a sign-in
+                // should be: signing in twice must never be an error.
+                if (!isUniqueViolation(error)) throw error;
+
+                const existing = await prisma.user.findUnique({ where: { email } });
+                if (!existing) throw error;
+
+                user = existing;
+                isNewUser = false;
+            }
         }
 
         res.status(200).json({
