@@ -20,7 +20,7 @@ interface LeaderboardProps {
 }
 
 interface LeaderboardEntry {
-  id: string;
+  pid: string;
   name: string;
   avatar?: string;
   xp: number;
@@ -194,7 +194,7 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
             {/* 2nd Place */}
             {leaderboardData[1] && (
               <button
-                onClick={() => onProfileClick?.(leaderboardData[1].id)}
+                onClick={() => onProfileClick?.(leaderboardData[1].pid)}
                 className="flex flex-col items-center hover:scale-105 transition-transform"
               >
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#c0c0c0]/30 to-[#c0c0c0]/10 flex items-center justify-center mb-3 border-2 border-[#c0c0c0]/50 overflow-hidden">
@@ -215,7 +215,7 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
             {/* 1st Place */}
             {leaderboardData[0] && (
               <button
-                onClick={() => onProfileClick?.(leaderboardData[0].id)}
+                onClick={() => onProfileClick?.(leaderboardData[0].pid)}
                 className="flex flex-col items-center -mt-8 hover:scale-105 transition-transform"
               >
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#ffd700]/30 to-[#ffd700]/10 flex items-center justify-center mb-3 border-2 border-[#ffd700]/50 animate-pulse-glow overflow-hidden">
@@ -236,7 +236,7 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
             {/* 3rd Place */}
             {leaderboardData[2] && (
               <button
-                onClick={() => onProfileClick?.(leaderboardData[2].id)}
+                onClick={() => onProfileClick?.(leaderboardData[2].pid)}
                 className="flex flex-col items-center hover:scale-105 transition-transform"
               >
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#cd7f32]/30 to-[#cd7f32]/10 flex items-center justify-center mb-3 border-2 border-[#cd7f32]/50 overflow-hidden">
@@ -265,8 +265,8 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
         >
           {leaderboardData.slice(3).map((user, index) => (
             <motion.button
-              key={user.id}
-              onClick={() => onProfileClick?.(user.id)}
+              key={user.pid}
+              onClick={() => onProfileClick?.(user.pid)}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}

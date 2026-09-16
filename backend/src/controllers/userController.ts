@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../config/db';
 import { calculateLevel } from '../config/xpConfig';
 
@@ -14,6 +15,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         pipeline.push({
             $project: {
                 name: 1,
+                pid: 1,
                 xp_points: 1,
                 streak_days: 1,
                 solvedProblems: 1,
@@ -34,8 +36,34 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
         const leaderboard = await prisma.user.aggregateRaw({ pipeline }) as unknown as any[];
 
+        // Ensure every ranked user has a public surrogate key. Users created
+        // before `pid` existed get one lazily (backfill-on-read). The pid is
+        // random and stored — never derived from the ObjectId.
+        for (const row of leaderboard as any[]) {
+            if (!row.pid) {
+                const pid = randomPid();
+                try {
+                    await prisma.user.updateMany({
+                        where: { id: String(row._id?.$oid || row._id), pid: null },
+                        data: { pid }
+                    });
+                    row.pid = pid;
+                } catch {
+                    // Unique-collision (astronomically unlikely) or lost race —
+                    // re-read the row so we still return a valid key.
+                    const fresh = await prisma.user.findUnique({
+                        where: { id: String(row._id?.$oid || row._id) },
+                        select: { pid: true }
+                    });
+                    row.pid = fresh?.pid || pid;
+                }
+            }
+        }
+
         const formattedLeaderboard = leaderboard.map((user: any, index: number) => ({
-            id: user._id?.$oid || user._id,
+            // Public surrogate key: the raw Mongo ObjectId is never exposed,
+            // so harvested ids cannot be replayed as JWT subjects.
+            pid: user.pid,
             name: user.name,
             avatar: user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'),
             xp: user.xp_points || 0,
@@ -51,6 +79,14 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+function randomPid(): string {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = crypto.randomBytes(12);
+    let out = '';
+    for (let i = 0; i < 12; i++) out += alphabet[bytes[i] % alphabet.length];
+    return 'u_' + out;
+}
 
 // @desc    Get dashboard stats for logged-in user (rank, streak, weekly activity)
 // @route   GET /api/users/dashboard-stats
@@ -137,6 +173,30 @@ export const getMyRank = async (req: Request | any, res: Response) => {
         });
 
         res.status(200).json({ rank: usersWithMoreXP + 1 });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Resolve a public profile surrogate key (pid) to a user id
+// @route   GET /api/users/profile-key/:pid
+// @access  Public
+// The public leaderboard exposes only the surrogate pid — never raw Mongo
+// ObjectIds — so clients resolve the pid here before loading the profile.
+export const resolveProfileKey = async (req: Request, res: Response) => {
+    try {
+        const { pid } = req.params;
+        const user = await prisma.user.findFirst({
+            where: { pid },
+            select: { id: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ userId: user.id });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

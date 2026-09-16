@@ -71,6 +71,20 @@ MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 CLIENT_URL=http://localhost:5173
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+> [!WARNING]
+> `JWT_SECRET` must be a strong random value of **at least 32 characters** and must **not** equal `GOOGLE_CLIENT_ID`. The backend refuses to start otherwise. Generate one with:
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+> ```
+
+Then sync the database schema (creates indexes and the public `pid` field on `User`):
+
+```bash
+npx prisma generate
+npx prisma db push
 ```
 
 > [!NOTE]

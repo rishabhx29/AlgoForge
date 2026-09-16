@@ -33,9 +33,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { problemCount, videoCount, roadmapCount, userCount } = useStats();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [categories, setCategories] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [topicsMap, setTopicsMap] = useState<Record<string, any[]>>({});
   const [pathSolvedCounts, setPathSolvedCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -46,23 +44,19 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
         const paths = await getLearningPaths();
         setCategories(paths);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const topicsData: Record<string, any[]> = {};
         // Also collect all problem _ids per path for progress matching
         const pathProblemIds: Record<string, string[]> = {};
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await Promise.all(paths.map(async (path: any) => {
           const pathTopics = await getTopicsByPath(path.id);
           topicsData[path.id] = pathTopics;
 
           // Fetch problems for each topic to get their _ids
           const problemIds: string[] = [];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await Promise.all(pathTopics.map(async (topic: any) => {
             try {
               const problems = await getProblemsByTopic(topic.id);
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               problems.forEach((p: any) => problemIds.push(p.id));
             } catch { /* ignore */ }
           }));
@@ -76,9 +70,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
             const progressData = await getUserProgress();
             const solvedSet = new Set<string>(
               progressData
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .filter((p: any) => p.status === 'SOLVED')
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((p: any) => p.problem_id)
             );
 
@@ -234,7 +226,6 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
 
                     {/* Topics Preview */}
                     <div className="space-y-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {topics.slice(0, 3).map((topic: any) => (
                         <div
                           key={topic.id}
