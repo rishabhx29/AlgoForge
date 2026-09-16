@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -8,7 +8,10 @@ import {
   Crown,
   Zap
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { getMyRank } from '@/api/userActions';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -32,25 +35,51 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
   const [category, setCategory] = useState<'xp' | 'streak' | 'solved'>('xp');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [myRank, setMyRank] = useState<number | null>(null);
+
+  const loadLeaderboard = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/leaderboard?sortBy=${category}&limit=10`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch leaderboard (${res.status})`);
+      }
+      const data = await res.json();
+      setLeaderboardData(data);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard', error);
+      toast.error('Failed to load the leaderboard. Please try again.');
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [category]);
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
+    loadLeaderboard();
+  }, [loadLeaderboard]);
+
+  // Fetch the logged-in user's own rank from the backend
+  useEffect(() => {
+    if (!profile) {
+      setMyRank(null);
+      return;
+    }
+
+    const fetchMyRank = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/users/leaderboard?sortBy=${category}&limit=10`);
-        if (res.ok) {
-          const data = await res.json();
-          setLeaderboardData(data);
-        }
+        const data = await getMyRank();
+        setMyRank(data.rank);
       } catch (error) {
-        console.error('Failed to fetch leaderboard', error);
-      } finally {
-        setLoading(false);
+        // Silent per spec: the "You" card simply stays hidden on failure
+        console.error('Failed to fetch your rank', error);
       }
     };
 
-    fetchLeaderboard();
-  }, [category]);
+    fetchMyRank();
+  }, [profile]);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-6 h-6 text-[#ffd700]" />;
@@ -63,6 +92,22 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
     return (
       <section className="relative min-h-screen pt-24 pb-12 overflow-hidden flex items-center justify-center">
         <div className="text-white">Loading Leaderboard...</div>
+      </section>
+    )
+  }
+
+  if (loadError && leaderboardData.length === 0) {
+    return (
+      <section className="relative min-h-screen pt-24 pb-12 overflow-hidden flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-white/60 mb-4">Failed to load the leaderboard.</p>
+          <Button
+            onClick={loadLeaderboard}
+            className="bg-[#a088ff] hover:bg-[#8f76fa] text-white"
+          >
+            Retry
+          </Button>
+        </div>
       </section>
     )
   }
@@ -265,8 +310,8 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
           ))}
         </motion.div>
 
-        {/* Current User Rank - TODO: Implement finding user rank from backend */}
-        {profile && (
+        {/* Current User Rank */}
+        {profile && myRank !== null && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -275,7 +320,7 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
           >
             <div className="flex items-center gap-4">
               <div className="w-8 flex justify-center">
-                <span className="text-white/60 font-medium">#?</span>
+                {getRankIcon(myRank)}
               </div>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#a088ff] to-[#63e3ff] flex items-center justify-center overflow-hidden">
                 {profile.avatar?.startsWith('http') ? (

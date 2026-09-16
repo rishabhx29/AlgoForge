@@ -115,6 +115,9 @@ model UserProgress {
   problem Problem @relation(fields: [problem_id], references: [id])
 
   @@unique([user_id, problem_id])
+
+  // Query paths that filter only by user (getUserProgress: findMany({ where: { user_id } }))
+  @@index([user_id])
 }
 
 model ForumPost {
@@ -149,4 +152,7 @@ model Reply {
   // Relations
   author User      @relation("ReplyAuthor", fields: [authorId], references: [id])
   post   ForumPost @relation(fields: [postId], references: [id])
+
+  // Speeds up the hot paths: listing replies for a post and admin deleteMany({ postId })
+  @@index([postId])
 }

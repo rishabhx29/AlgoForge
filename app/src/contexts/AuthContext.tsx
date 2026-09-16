@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { SESSION_EXPIRED_EVENT } from '@/api/apiClient';
 
 interface User {
   id: string;
@@ -207,6 +208,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
   };
+
+  // Global 401 handling: apiClient dispatches this event (once per expiry)
+  // when the stored token is rejected; clear user state in response.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setProfile(null);
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   const updateProfile = async (updates: Record<string, unknown>) => {
     if (!profile) return { error: 'Not authenticated' };

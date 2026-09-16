@@ -116,6 +116,33 @@ export const getDashboardStats = async (req: Request | any, res: Response) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+// @desc    Get the authenticated user's leaderboard rank (by XP)
+// @route   GET /api/users/leaderboard/me
+// @access  Private
+export const getMyRank = async (req: Request | any, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { xp_points: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Rank = number of users with strictly more XP, plus one.
+        const usersWithMoreXP = await prisma.user.count({
+            where: { xp_points: { gt: user.xp_points || 0 } }
+        });
+
+        res.status(200).json({ rank: usersWithMoreXP + 1 });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 // @desc    Get public profile for a user
 // @route   GET /api/users/:userId/profile
 // @access  Public

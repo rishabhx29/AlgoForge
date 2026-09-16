@@ -56,18 +56,10 @@ export default defineConfig(() => ({
           if (id.includes('framer-motion')) return 'vendor-framer-motion';
           // Code editor (very heavy ~2MB, only used in ProblemWorkspace)
           if (id.includes('@monaco-editor') || id.includes('monaco-editor')) return 'vendor-monaco';
-          // Charts (only used in Dashboard)
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-recharts';
           // React Query
           if (id.includes('@tanstack')) return 'vendor-tanstack';
           // Radix UI primitives
           if (id.includes('@radix-ui')) return 'vendor-radix';
-          // GSAP animation library
-          if (id.includes('gsap')) return 'vendor-gsap';
-          // React markdown rendering
-          if (id.includes('react-markdown') || id.includes('remark') || id.includes('micromark')) return 'vendor-markdown';
-          // Remaining node_modules go into a general vendor chunk
-          if (id.includes('node_modules')) return 'vendor';
         },
       },
     },
