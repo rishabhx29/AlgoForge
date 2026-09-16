@@ -18,6 +18,7 @@ import { ScrollToTop } from '@/components/custom/ScrollToTop';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { SESSION_EXPIRED_EVENT } from '@/api/apiClient';
+import { resolveProfileKey } from '@/api/userActions';
 import { PageSkeleton } from '@/components/custom/PageSkeleton';
 import { ErrorBoundary } from '@/components/custom/ErrorBoundary';
 import { ProfileView } from '@/sections/ProfileView';
@@ -66,8 +67,9 @@ function AppContent() {
           setSelectedWorkspaceId(wId);
           setCurrentView('workspace');
         } else if (hash.startsWith('profile/')) {
-          const userId = hash.replace('profile/', '');
-          setSelectedProfileUserId(userId);
+          const profileKey = hash.replace('profile/', '');
+          setSelectedProfileUserId(profileKey);
+          if (profileKey.startsWith('u_')) resolveProfilePid(profileKey);
           setCurrentView('profile');
         } else if (hash === 'dashboard') {
           if (user || !isAuthReady) {
@@ -150,11 +152,25 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleProfileClick = (userId: string) => {
-    setSelectedProfileUserId(userId);
+  const handleProfileClick = (profileKey: string) => {
+    setSelectedProfileUserId(profileKey);
     setCurrentView('profile');
-    window.location.hash = `profile/${userId}`;
+    window.location.hash = `profile/${profileKey}`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Leaderboard passes a public pid (u_…) — resolve it to the internal
+    // user id so ProfileView can load. Legacy raw ids skip the lookup.
+    if (profileKey.startsWith('u_')) resolveProfilePid(profileKey);
+  };
+
+  /** Resolve a public profile pid → internal user id (no-op for legacy ids). */
+  const resolveProfilePid = (profileKey: string) => {
+    resolveProfileKey(profileKey)
+      .then(({ userId }) => {
+        if (userId) setSelectedProfileUserId(userId);
+      })
+      .catch((error) => {
+        console.error('Failed to resolve profile link', error);
+      });
   };
 
   const handleAuthClick = (mode: 'login' | 'signup') => {

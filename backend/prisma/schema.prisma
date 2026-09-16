@@ -21,6 +21,12 @@ model User {
   xp_points      Int             @default(0)
   streak_days    Int             @default(0)
   last_active    DateTime        @default(now())
+  // Public surrogate key for profile links (e.g. /profile/<pid>). The raw
+  // Mongo ObjectId is the JWT subject, so it must never appear in public
+  // API payloads. Anonymous users must not be able to enumerate it either,
+  // therefore `pid` is REQUIRED for ranking responses but only assigned on
+  // demand (migration), never derived from the ObjectId (no reversibility).
+  pid            String?         @unique
   solvedProblems SolvedProblem[]
   bookmarks      String[]        // Array of Problem IDs
   activityLog    ActivityLog[]

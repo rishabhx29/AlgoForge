@@ -30,3 +30,8 @@ export const getMyRank = async (): Promise<{ rank: number }> => {
     return response.data;
 };
 
+export const resolveProfileKey = async (pid: string): Promise<{ userId: string }> => {
+    const response = await apiClient.get(`/api/users/profile-key/${encodeURIComponent(pid)}`);
+    return response.data;
+};
+
