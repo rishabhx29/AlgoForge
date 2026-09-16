@@ -25,9 +25,6 @@ jobs:
             backend/package-lock.json
 
       # ── Frontend (app/) ──
-
-
-      # ── Frontend (app/) ──
       - name: Install frontend dependencies
         working-directory: app
         run: npm ci
@@ -39,6 +36,10 @@ jobs:
       - name: ESLint (app)
         working-directory: app
         run: npx eslint .
+
+      - name: Frontend tests (vitest)
+        working-directory: app
+        run: npm test
 
       # ── Backend ──
       - name: Install backend dependencies

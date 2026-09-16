@@ -81,6 +81,11 @@ typings/
 .next
 out
 
+# Compiled output (built on deploy / CI, never committed)
+dist/
+backend/dist/
+app/dist/
+
 # Nuxt.js build / generate output
 .nuxt
 dist
