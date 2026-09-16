@@ -149,3 +149,8 @@ deploy.md
 DEPLOY.md
 agent
 agents/skills
+
+# Local design/output working folders (tracked on Ui-Refactor branch instead)
+.workbuddy-ai/
+design-mockups/
+outputs/
