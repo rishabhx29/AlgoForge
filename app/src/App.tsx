@@ -49,6 +49,20 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
+  /**
+   * Resolve a public profile pid â†’ internal user id (no-op for legacy ids).
+   * Declared before the hash-change effect below, which depends on it.
+   */
+  const resolveProfilePid = (profileKey: string) => {
+    resolveProfileKey(profileKey)
+      .then(({ userId }) => {
+        if (userId) setSelectedProfileUserId(userId);
+      })
+      .catch((error) => {
+        console.error('Failed to resolve profile link', error);
+      });
+  };
+
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
@@ -157,20 +171,9 @@ function AppContent() {
     setCurrentView('profile');
     window.location.hash = `profile/${profileKey}`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Leaderboard passes a public pid (u_…) — resolve it to the internal
+    // Leaderboard passes a public pid (u_â€¦) â€” resolve it to the internal
     // user id so ProfileView can load. Legacy raw ids skip the lookup.
     if (profileKey.startsWith('u_')) resolveProfilePid(profileKey);
-  };
-
-  /** Resolve a public profile pid → internal user id (no-op for legacy ids). */
-  const resolveProfilePid = (profileKey: string) => {
-    resolveProfileKey(profileKey)
-      .then(({ userId }) => {
-        if (userId) setSelectedProfileUserId(userId);
-      })
-      .catch((error) => {
-        console.error('Failed to resolve profile link', error);
-      });
   };
 
   const handleAuthClick = (mode: 'login' | 'signup') => {

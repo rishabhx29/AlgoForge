@@ -6,19 +6,14 @@ import { getDashboardStats, getUserProgress } from '@/api/userActions';
 import { getAllProblems, getAllTopics } from '@/api/content';
 
 interface UserHeroProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: any;
     onTopicClick: (topicId: string) => void;
 }
 
 export function UserHero({ user, onTopicClick }: UserHeroProps) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [dashboardStats, setDashboardStats] = useState<any>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [problems, setProblems] = useState<any[]>([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [topics, setTopics] = useState<any[]>([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [userProgress, setUserProgress] = useState<any[]>([]);
 
     useEffect(() => {
@@ -48,9 +43,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
 
     // Compute solved stats
     const solvedIds = useMemo(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const solved = userProgress.filter((p: any) => p.status === 'SOLVED');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Set(solved.map((p: any) => p.problem_id));
     }, [userProgress]);
 
@@ -71,7 +64,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
     // Weekly activity from backend
     const weeklyActivity = useMemo(() => {
         if (dashboardStats?.weeklyActivity) {
-            return dashboardStats.weeklyActivity.map((d: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            return dashboardStats.weeklyActivity.map((d: any) => {  
                 const date = new Date(d.date + 'T00:00:00');
                 return {
                     day: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -90,31 +83,23 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
         ];
     }, [dashboardStats]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const maxActivity = Math.max(...weeklyActivity.map((d: any) => d.count), 1);
 
     // Continue Learning - find the topic with most recent activity
     const continueTopicData = useMemo(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const solvedProgress = userProgress.filter((p: any) => p.status === 'SOLVED');
 
         // Build per-topic stats
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const topicStats = topics.map((topic: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const topicProblems = problems.filter((p: any) => p.topic_id === topic.id);
             const totalInTopic = topicProblems.length;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const solvedInTopic = topicProblems.filter((p: any) => solvedIds.has(p.id)).length;
             const progress = totalInTopic > 0 ? Math.round((solvedInTopic / totalInTopic) * 100) : 0;
 
             // Most recent solve for this topic
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const topicProblemIds = new Set(topicProblems.map((p: any) => p.id));
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const topicSolves = solvedProgress.filter((p: any) => topicProblemIds.has(p.problem_id));
             const lastSolveDate = topicSolves.length > 0
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ? Math.max(...topicSolves.map((p: any) => new Date(p.updatedAt).getTime()))
                 : 0;
 
@@ -129,21 +114,20 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
 
         // Topic with the most recent activity (that isn't 100% complete)
         const inProgress = topicStats
-            .filter((t: any) => t.lastSolveDate > 0 && t.progress < 100) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .sort((a: any, b: any) => b.lastSolveDate - a.lastSolveDate); // eslint-disable-line @typescript-eslint/no-explicit-any
+            .filter((t: any) => t.lastSolveDate > 0 && t.progress < 100)  
+            .sort((a: any, b: any) => b.lastSolveDate - a.lastSolveDate);  
 
         if (inProgress.length > 0) {
             return inProgress[0];
         }
 
         // Fallback: first topic with any problems
-        const withProblems = topicStats.filter((t: any) => t.totalInTopic > 0); // eslint-disable-line @typescript-eslint/no-explicit-any
+        const withProblems = topicStats.filter((t: any) => t.totalInTopic > 0);  
         return withProblems.length > 0 ? withProblems[0] : null;
     }, [topics, problems, userProgress, solvedIds]);
 
     // Next goals: dynamically based on progress
     const nextGoals = useMemo(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const goals: any[] = [];
 
         // Level up goal
@@ -397,7 +381,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 1, delay: 0.8 }}
-                                        points={`40,100 ${weeklyActivity.map((d: any, i: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                                        points={`40,100 ${weeklyActivity.map((d: any, i: number) => {  
                                             const x = 40 + i * 46;
                                             const y = maxActivity > 0 ? 100 - (d.count / maxActivity) * 82 : 100;
                                             return `${x},${y}`;
@@ -410,7 +394,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                                         initial={{ pathLength: 0, opacity: 0 }}
                                         animate={{ pathLength: 1, opacity: 1 }}
                                         transition={{ duration: 1.5, delay: 0.6 }}
-                                        points={weeklyActivity.map((d: any, i: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                                        points={weeklyActivity.map((d: any, i: number) => {  
                                             const x = 40 + i * 46;
                                             const y = maxActivity > 0 ? 100 - (d.count / maxActivity) * 82 : 100;
                                             return `${x},${y}`;
@@ -424,7 +408,6 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                                     />
 
                                     {/* Dots + labels */}
-                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {weeklyActivity.map((d: any, i: number) => {
                                         const x = 40 + i * 46;
                                         const y = maxActivity > 0 ? 100 - (d.count / maxActivity) * 82 : 100;
@@ -456,7 +439,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                                     })}
 
                                     {/* Day labels */}
-                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    { }
                                     {weeklyActivity.map((d: any, i: number) => {
                                         const x = 40 + i * 46;
                                         const isToday = i === 6;
@@ -500,7 +483,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                             </div>
 
                             {/* Dynamic goals */}
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            { }
                             {nextGoals.map((goal: any, index: number) => (
                                 <div key={index} className="p-4 bg-white/5 rounded-xl border border-white/10">
                                     <h4 className="font-medium text-white mb-1">{goal.title}</h4>

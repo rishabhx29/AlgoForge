@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -13,8 +13,6 @@ import {
   Clock,
   BarChart3,
   ChevronDown,
-  X,
-  Save,
   Code2
 } from 'lucide-react';
 import { getAllProblems, getAllTopics } from '@/api/content';
@@ -23,21 +21,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { SOLVE_XP } from '@/utils/xpConfig';
+import { NotesModal } from '@/components/custom/NotesModal';
+import { buildProgressSets } from '@/lib/types';
+import type { Problem, Topic, UserProgressItem } from '@/lib/types';
 
 export function Problems() {
-  const { data: problemsData = [], isLoading: problemsLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: problemsData = [], isLoading: problemsLoading } = useQuery<Problem[]>({
     queryKey: ['problems'],
     queryFn: getAllProblems
   });
 
-  const { data: topicsData = [], isLoading: topicsLoading } = useQuery({
+  const { data: topicsData = [], isLoading: topicsLoading } = useQuery<Topic[]>({
     queryKey: ['topics'],
     queryFn: getAllTopics
   });
 
   const { user, refreshProfile } = useAuth();
 
-  const { data: userProgressData } = useQuery({
+  const { data: userProgressData } = useQuery<UserProgressItem[]>({
     queryKey: ['userProgress', user?.id],
     queryFn: getUserProgress,
     enabled: !!user,
@@ -61,19 +63,8 @@ export function Problems() {
 
   useEffect(() => {
     if (userProgressData) {
-      const completed = new Set<string>();
-      const bookmarked = new Set<string>();
-      const notesData: Record<string, string> = {};
-      
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      userProgressData.forEach((p: any) => {
-        if (p.status === 'SOLVED') completed.add(p.problem_id);
-        if (p.is_bookmarked) bookmarked.add(p.problem_id);
-        if (p.notes && p.notes.trim()) {
-          notesData[p.problem_id] = p.notes;
-        }
-      });
-      
+      const { completed, bookmarked, notesMap: notesData } = buildProgressSets(userProgressData);
+
       setCompletedProblems(completed);
       setBookmarkedProblems(bookmarked);
       setNotesMap(notesData);
@@ -87,8 +78,7 @@ export function Problems() {
   // Get all unique tags
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    allProblems.forEach((p: any) => {
+    allProblems.forEach((p) => {
       if (p.tags) p.tags.forEach((t: string) => tags.add(t));
     });
     return Array.from(tags).sort();
@@ -96,7 +86,7 @@ export function Problems() {
 
   // Filter problems
   const filteredProblems = useMemo(() => {
-    return allProblems.filter((problem: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return allProblems.filter((problem) => {
       const tags = problem.tags || [];
       const matchesSearch = problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -109,12 +99,9 @@ export function Problems() {
   // Stats
   const stats = {
     total: allProblems.length,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    easy: allProblems.filter((p: any) => p.difficulty === 'Easy').length,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    medium: allProblems.filter((p: any) => p.difficulty === 'Medium').length,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    hard: allProblems.filter((p: any) => p.difficulty === 'Hard').length,
+    easy: allProblems.filter((p) => p.difficulty === 'Easy').length,
+    medium: allProblems.filter((p) => p.difficulty === 'Medium').length,
+    hard: allProblems.filter((p) => p.difficulty === 'Hard').length,
   };
 
   const toggleComplete = async (_problemId: string, problemMongoId: string) => {
@@ -134,6 +121,8 @@ export function Problems() {
       if (!wasCompleted) toast.success(`Problem marked as complete! +${SOLVE_XP} XP`);
       // Refresh profile so nav XP updates immediately
       refreshProfile();
+      // Keep shared progress cache in sync across views
+      queryClient.invalidateQueries({ queryKey: ['userProgress'] });
     } catch {
       setCompletedProblems(prev => {
         const newSet = new Set(prev);
@@ -161,6 +150,8 @@ export function Problems() {
       await apiToggleBookmark(problemMongoId);
       if (wasBookmarked) toast.info('Bookmark removed');
       else toast.success('Problem bookmarked');
+      // Keep shared progress cache in sync across views
+      queryClient.invalidateQueries({ queryKey: ['userProgress'] });
     } catch {
       setBookmarkedProblems(prev => {
         const newSet = new Set(prev);
@@ -171,6 +162,23 @@ export function Problems() {
       toast.error('Failed to update bookmark. Please log in.');
     }
   };
+
+  const saveNote = useCallback(async () => {
+    if (!notesModal) return;
+    setSavingNote(true);
+    try {
+      await updateNotes(notesModal.problemId, noteContent);
+      setNotesMap(prev => ({ ...prev, [notesModal.problemId]: noteContent }));
+      toast.success(noteContent.trim() ? 'Note saved!' : 'Note cleared');
+      setNotesModal(null);
+      // Notes live in the shared progress cache â€” keep it in sync.
+      queryClient.invalidateQueries({ queryKey: ['userProgress'] });
+    } catch {
+      toast.error('Failed to save note. Please log in.');
+    } finally {
+      setSavingNote(false);
+    }
+  }, [notesModal, noteContent, queryClient]);
 
   // If initial load
   if (filtersLoading && allProblems.length === 0) {
@@ -318,12 +326,10 @@ export function Problems() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="grid gap-3"
         >
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {filteredProblems.map((problem: any, index: number) => {
             const problemMongoId = problem._id || problem.id;
             const isCompleted = completedProblems.has(problemMongoId);
             const isBookmarked = bookmarkedProblems.has(problemMongoId);
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             const topic = topics.find((t: any) => t.id === problem.topic_id);
 
             return (
@@ -445,58 +451,14 @@ export function Problems() {
 
       {/* Notes Modal */}
       {notesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setNotesModal(null)} />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="relative w-full max-w-lg mx-4 glass rounded-2xl p-6 border border-white/10"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Notes</h3>
-                <p className="text-sm text-white/40 truncate max-w-[300px]">{notesModal.problemTitle}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    if (!notesModal) return;
-                    setSavingNote(true);
-                    try {
-                      await updateNotes(notesModal.problemId, noteContent);
-                      setNotesMap(prev => ({ ...prev, [notesModal.problemId]: noteContent }));
-                      toast.success(noteContent.trim() ? 'Note saved!' : 'Note cleared');
-                      setNotesModal(null);
-                    } catch {
-                      toast.error('Failed to save note. Please log in.');
-                    } finally {
-                      setSavingNote(false);
-                    }
-                  }}
-                  disabled={savingNote}
-                  className="px-3 py-1.5 rounded-lg bg-[#a088ff]/20 text-[#a088ff] hover:bg-[#a088ff]/30 transition-colors flex items-center gap-1.5"
-                >
-                  <Save className="w-4 h-4" />
-                  {savingNote ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={() => setNotesModal(null)}
-                  className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <textarea
-              value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Write your notes... Key insights, approach, time complexity, etc."
-              rows={10}
-              autoFocus
-              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#a088ff] resize-none font-mono text-sm"
-            />
-          </motion.div>
-        </div>
+        <NotesModal
+          problemTitle={notesModal.problemTitle}
+          noteContent={noteContent}
+          saving={savingNote}
+          onChange={setNoteContent}
+          onSave={saveNote}
+          onClose={() => setNotesModal(null)}
+        />
       )}
     </section>
   );

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import { apiClient } from '@/api/apiClient';
 
 export function useStats() {
     const [userCount, setUserCount] = useState<string>('0');
@@ -13,7 +11,7 @@ export function useStats() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await axios.get(`${API_BASE_URL}/api/info/stats`);
+                const res = await apiClient.get(`/api/info/stats`);
                 const data = res.data;
 
                 // Format numbers (e.g. 1.2k)
