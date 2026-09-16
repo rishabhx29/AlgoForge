@@ -52,8 +52,8 @@ The platform is built using a modern, scalable stack:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Rishabhworkspace/AlgoForge-2.0.git
-cd AlgoForge-2.0
+git clone https://github.com/rishabhx29/AlgoForge.git
+cd AlgoForge
 ```
 
 ### 2. Setup the Backend

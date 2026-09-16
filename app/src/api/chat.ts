@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import { apiClient } from './apiClient';
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -12,8 +10,8 @@ export const sendChatMessage = async (
     history: ChatMessage[],
     token: string
 ): Promise<string> => {
-    const response = await axios.post(
-        `${API_BASE_URL}/api/chat`,
+    const response = await apiClient.post(
+        `/api/chat`,
         { message, history },
         {
             headers: {

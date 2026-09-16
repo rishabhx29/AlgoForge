@@ -1,11 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-const getAuthHeader = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Bearer ${token}` } };
-};
+import { apiClient } from './apiClient';
 
 export interface ForumPostSummary {
     id: string;
@@ -73,12 +66,12 @@ export const getPosts = async (
     if (sort) params.append('sort', sort);
     if (page) params.append('page', page.toString());
 
-    const response = await axios.get(`${API_BASE_URL}/api/forum?${params.toString()}`);
+    const response = await apiClient.get(`/api/forum?${params.toString()}`);
     return response.data;
 };
 
 export const getPost = async (id: string): Promise<ForumPostFull> => {
-    const response = await axios.get(`${API_BASE_URL}/api/forum/${id}`);
+    const response = await apiClient.get(`/api/forum/${id}`);
     return response.data;
 };
 
@@ -88,33 +81,30 @@ export const createPost = async (data: {
     category: string;
     tags?: string[];
 }): Promise<ForumPostFull> => {
-    const response = await axios.post(`${API_BASE_URL}/api/forum`, data, getAuthHeader());
+    const response = await apiClient.post(`/api/forum`, data);
     return response.data;
 };
 
 export const addReply = async (postId: string, content: string): Promise<ForumPostFull> => {
-    const response = await axios.post(
-        `${API_BASE_URL}/api/forum/${postId}/reply`,
-        { content },
-        getAuthHeader()
+    const response = await apiClient.post(
+        `/api/forum/${postId}/reply`,
+        { content }
     );
     return response.data;
 };
 
 export const togglePostLike = async (postId: string) => {
-    const response = await axios.post(
-        `${API_BASE_URL}/api/forum/${postId}/like`,
-        {},
-        getAuthHeader()
+    const response = await apiClient.post(
+        `/api/forum/${postId}/like`,
+        {}
     );
     return response.data;
 };
 
 export const toggleReplyLike = async (postId: string, replyId: string) => {
-    const response = await axios.post(
-        `${API_BASE_URL}/api/forum/${postId}/replies/${replyId}/like`,
-        {},
-        getAuthHeader()
+    const response = await apiClient.post(
+        `/api/forum/${postId}/replies/${replyId}/like`,
+        {}
     );
     return response.data;
 };

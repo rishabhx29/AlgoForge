@@ -75,6 +75,12 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Trust the first proxy hop (Render / reverse proxies) so req.ip reflects the
+// real client IP from X-Forwarded-For instead of the proxy IP. Without this,
+// IP-based rate limiting and abuse detection would bucket all traffic under
+// the proxy's address.
+app.set('trust proxy', 1);
+
 // Database Connection
 connectDB();
 

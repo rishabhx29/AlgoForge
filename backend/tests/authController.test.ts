@@ -24,6 +24,8 @@ vi.mock('../src/config/db', () => ({
 }));
 
 import { registerUser, loginUser, googleAuth } from '../src/controllers/authController';
+import { validate } from '../src/middleware/validate';
+import { registerSchema } from '../src/validators/authSchemas';
 import { prisma } from '../src/config/db';
 
 beforeEach(() => {
@@ -152,6 +154,41 @@ describe('loginUser', () => {
         }));
     });
 });
+// ── validate middleware (zod input validation) ────────────────
+
+describe('validate middleware', () => {
+    it('returns 400 with errors for invalid register input', async () => {
+        const middleware = validate(registerSchema) as any;
+        const req: any = { body: { name: 'A', email: 'not-an-email', password: 'short' } };
+        const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+        const next = vi.fn();
+
+        await middleware(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            message: 'Validation failed',
+            errors: expect.arrayContaining([
+                expect.objectContaining({ path: 'email' }),
+                expect.objectContaining({ path: 'password' })
+            ])
+        }));
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('calls next() for valid register input', async () => {
+        const middleware = validate(registerSchema) as any;
+        const req: any = { body: { name: 'Aditi', email: 'aditi@test.com', password: 'pass1234' } };
+        const res: any = {};
+        const next = vi.fn();
+
+        await middleware(req, res, next);
+
+        expect(next).toHaveBeenCalledWith();
+        expect(req.body.email).toBe('aditi@test.com');
+    });
+});
+
 // ── googleAuth ────────────────────────────────────────────────
 
 

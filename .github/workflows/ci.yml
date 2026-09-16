@@ -48,3 +48,7 @@ jobs:
       - name: TypeScript type check (backend)
         working-directory: backend
         run: npx tsc --noEmit
+
+      - name: Backend tests (vitest)
+        working-directory: backend
+        run: npm test

@@ -169,11 +169,12 @@ export const googleAuth = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Google Auth Error:', error);
 
-    res.status(500).json({
-        success: false,
-        message: 'Google authentication failed'
-    });
-}
+        // Invalid/failed Google token verification is a client error (400),
+        // not a server error — e.g. expired, malformed, or wrongly-audience ID token.
+        res.status(400).json({
+            message: 'Google Auth Failed'
+        });
+    }
 };
 
 // @desc    Get user data

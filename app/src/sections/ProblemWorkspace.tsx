@@ -128,13 +128,15 @@ export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
    * unauthenticated users can still test their code.
    */
   const handleSubmit = async () => {
+    if (isExecuting) return;
     const res = await handleRunCode();
     if (res?.success && res?.allPassed) {
       toast.success('All test cases passed! (Submission saved)');
       try {
         await updateProblemStatus(problemId, 'SOLVED');
-      } catch {
-        // silently fail if not logged in or other issues
+      } catch (error) {
+        console.error('Failed to save problem status', error);
+        toast.error('Solution accepted, but saving progress failed. Please retry.');
       }
     }
   };
@@ -191,10 +193,16 @@ export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#a088ff] hover:bg-[#b09dff] text-white transition-colors text-sm font-medium shadow-lg shadow-[#a088ff]/20"
+            disabled={isExecuting}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium shadow-lg shadow-[#a088ff]/20 transition-colors ${isExecuting ? 'bg-[#a088ff]/50 text-white/70 cursor-not-allowed' : 'bg-[#a088ff] hover:bg-[#b09dff] text-white'
+              }`}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Submit</span>
+            {isExecuting ? (
+              <div className="w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            <span>{isExecuting ? 'Running' : 'Submit'}</span>
           </button>
         </div>
       </div>

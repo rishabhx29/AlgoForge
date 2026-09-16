@@ -17,7 +17,9 @@ import { AlgoBot } from '@/components/custom/AlgoBot';
 import { ScrollToTop } from '@/components/custom/ScrollToTop';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import { SESSION_EXPIRED_EVENT } from '@/api/apiClient';
 import { PageSkeleton } from '@/components/custom/PageSkeleton';
+import { ErrorBoundary } from '@/components/custom/ErrorBoundary';
 import { ProfileView } from '@/sections/ProfileView';
 
 // Lazy loaded views
@@ -160,6 +162,19 @@ function AppContent() {
     setIsAuthModalOpen(true);
   };
 
+  // Global 401 handling: when apiClient reports an expired session,
+  // notify the user and prompt them to log in again.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      toast.error('Your session has expired. Please log in again.');
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
+
   const renderView = () => {
     if (!isAuthReady && ['dashboard', 'notes', 'daily-challenges', 'admin'].includes(currentView)) {
       return <PageSkeleton />;
@@ -266,7 +281,9 @@ function AppContent() {
             transition={{ duration: 0.3 }}
           >
             <Suspense fallback={<PageSkeleton />}>
-              {renderView()}
+              <ErrorBoundary key={currentView}>
+                {renderView()}
+              </ErrorBoundary>
             </Suspense>
           </motion.div>
         </AnimatePresence>
@@ -311,7 +328,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
         <Analytics />
       </AuthProvider>
     </QueryClientProvider>

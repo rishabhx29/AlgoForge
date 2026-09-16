@@ -5,7 +5,9 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         env: {
-            JWT_SECRET: 'test-secret-key',
+            // Test-only JWT secret — must satisfy the >= 32 char rule enforced
+            // by src/config/env.ts. Never a real production secret.
+            JWT_SECRET: 'test-only-secret-key-0123456789abcdef',
         },
         coverage: {
             provider: 'v8',

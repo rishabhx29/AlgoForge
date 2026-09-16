@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { createPostSchema, TITLE_MAX, CONTENT_MAX } from '@/lib/validators';
 import {
     getPosts,
@@ -89,10 +90,13 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [listError, setListError] = useState(false);
 
     // Detail state
     const [selectedPost, setSelectedPost] = useState<ForumPostFull | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState(false);
+    const [detailPostId, setDetailPostId] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');
     const [replySubmitting, setReplySubmitting] = useState(false);
 
@@ -122,12 +126,15 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
     // Fetch posts
     const fetchPosts = useCallback(async () => {
         setLoading(true);
+        setListError(false);
         try {
             const data = await getPosts(activeCategory, activeSort, currentPage);
             setPosts(data.posts);
             setTotalPages(data.totalPages);
         } catch (err) {
             console.error('Failed to fetch posts:', err);
+            toast.error('Failed to load posts. Please check your connection and try again.');
+            setListError(true);
         } finally {
             setLoading(false);
         }
@@ -139,11 +146,15 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
 
     const handleOpenPost = async (postId: string) => {
         setDetailLoading(true);
+        setDetailError(false);
+        setDetailPostId(postId);
         try {
             const data = await getPost(postId);
             setSelectedPost(data);
         } catch (err) {
             console.error('Failed to fetch post:', err);
+            toast.error('Failed to load this post. Please try again.');
+            setDetailError(true);
         } finally {
             setDetailLoading(false);
         }
@@ -162,11 +173,13 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                 content: data.content.trim(),
                 category: data.category,
             });
+            toast.success('Post created successfully');
             reset();
             setShowCreateForm(false);
             fetchPosts();
         } catch (err) {
             console.error('Failed to create post:', err);
+            toast.error('Failed to create post. Please try again.');
         } finally {
             setCreateSubmitting(false);
         }
@@ -186,6 +199,7 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
             setReplyText('');
         } catch (err) {
             console.error('Failed to add reply:', err);
+            toast.error('Failed to post your reply. Please try again.');
         } finally {
             setReplySubmitting(false);
         }
@@ -207,6 +221,7 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
             ));
         } catch (err) {
             console.error('Failed to like post:', err);
+            toast.error('Failed to update like. Please try again.');
         }
     };
 
@@ -225,18 +240,19 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
             });
         } catch (err) {
             console.error('Failed to like reply:', err);
+            toast.error('Failed to update like. Please try again.');
         }
     };
 
     // Post detail view
-    if (selectedPost || detailLoading) {
+    if (selectedPost || detailLoading || detailError) {
         return (
             <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8">
                 <div className="absolute inset-0 isometric-pattern opacity-20 fixed pointer-events-none" />
                 <div className="max-w-4xl mx-auto relative z-10">
                     <Button
                         variant="ghost"
-                        onClick={() => { setSelectedPost(null); setReplyText(''); }}
+                        onClick={() => { setSelectedPost(null); setReplyText(''); setDetailError(false); setDetailPostId(null); }}
                         className="mb-6 text-white/60 hover:text-white"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -246,6 +262,16 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                     {detailLoading ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-8 h-8 text-[#a088ff] animate-spin" />
+                        </div>
+                    ) : detailError && !selectedPost ? (
+                        <div className="text-center py-20">
+                            <p className="text-white/60 mb-4">Failed to load this post.</p>
+                            <Button
+                                onClick={() => detailPostId && handleOpenPost(detailPostId)}
+                                className="bg-[#a088ff] hover:bg-[#8f76fa] text-white"
+                            >
+                                Retry
+                            </Button>
                         </div>
                     ) : selectedPost && (
                         <motion.div
@@ -593,6 +619,16 @@ export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 text-[#a088ff] animate-spin" />
+                    </div>
+                ) : listError ? (
+                    <div className="text-center py-20">
+                        <p className="text-white/60 mb-4">Failed to load posts.</p>
+                        <Button
+                            onClick={fetchPosts}
+                            className="bg-[#a088ff] hover:bg-[#8f76fa] text-white"
+                        >
+                            Retry
+                        </Button>
                     </div>
                 ) : posts.length === 0 ? (
                     <motion.div
