@@ -5,9 +5,15 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         env: {
-            // Test-only JWT secret — must satisfy the >= 32 char rule enforced
-            // by src/config/env.ts. Never a real production secret.
+            // Test-only dummy values — every variable enforced by
+            // src/config/env.ts must be present or the import chain throws.
+            // Never real production secrets.
+            PORT: '5000',
+            MONGO_URI: 'mongodb://127.0.0.1:27017/algoforge-test',
             JWT_SECRET: 'test-only-secret-key-0123456789abcdef',
+            GOOGLE_CLIENT_ID: 'test-only-google-client-id.apps.googleusercontent.com',
+            CLIENT_URL: 'http://localhost:5173',
+            GEMINI_API_KEY: 'test-only-gemini-key',
         },
         coverage: {
             provider: 'v8',
