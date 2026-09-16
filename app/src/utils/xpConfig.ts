@@ -14,7 +14,12 @@ export const XP_PER_LEVEL = 1000;
 /**
  * Calculate a user's level from their total XP.
  * Formula: level = floor(xp / XP_PER_LEVEL) + 1
+ *
+ * XP is clamped at 0 so a negative or non-finite value can never produce a
+ * level below 1 (un-solving a problem decrements XP and inconsistent data
+ * must not surface as "Level 0" in the UI).
  */
 export function calculateLevel(xpPoints: number): number {
-  return Math.floor(xpPoints / XP_PER_LEVEL) + 1;
+  const safeXp = Number.isFinite(xpPoints) ? Math.max(0, xpPoints) : 0;
+  return Math.floor(safeXp / XP_PER_LEVEL) + 1;
 }
