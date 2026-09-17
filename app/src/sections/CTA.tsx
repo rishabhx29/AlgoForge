@@ -5,11 +5,11 @@ import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/hooks/useStats';
 
-interface CTAProps {
+interface CallToActionProps {
   onGetStarted: () => void;
 }
 
-export function CTA({ onGetStarted }: CTAProps) {
+export function CallToAction({ onGetStarted }: Readonly<CallToActionProps>) {
   const { userCount } = useStats();
 
   // Pre-compute random values to avoid Math.random() in render

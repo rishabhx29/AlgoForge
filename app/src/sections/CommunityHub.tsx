@@ -39,7 +39,7 @@ const communityCards = [
     }
 ];
 
-export function CommunityHub({ onNavigate }: CommunityHubProps) {
+export function CommunityHub({ onNavigate }: Readonly<CommunityHubProps>) {
     return (
         <section id="community" className="relative py-24 overflow-hidden">
             {/* Background */}

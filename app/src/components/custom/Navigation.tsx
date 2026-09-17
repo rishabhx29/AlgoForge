@@ -17,6 +17,7 @@ import {
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { isNavigationLinkActive } from '@/lib/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +32,7 @@ interface NavigationProps {
   onAuthClick: (mode: 'login' | 'signup') => void;
 }
 
-export function Navigation({ currentView, onNavigate, onAuthClick }: NavigationProps) {
+export function Navigation({ currentView, onNavigate, onAuthClick }: Readonly<NavigationProps>) {
   const { user, profile, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -136,9 +137,7 @@ export function Navigation({ currentView, onNavigate, onAuthClick }: NavigationP
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link, index) => {
-                const isActive = currentView === 'home'
-                  ? (link.isAnchor ? activeSection === link.id : false)
-                  : currentView === link.view;
+                const isActive = isNavigationLinkActive(link, currentView, activeSection);
 
                 return (
                   <motion.button

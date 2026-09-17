@@ -3,6 +3,12 @@
 import { animate } from "framer-motion";
 import { useEffect, useState } from "react";
 
+function animationDuration(delimiter: string): number {
+    if (delimiter === "") return 8; // Character animation
+    if (delimiter === " ") return 3; // Word animation
+    return 2; // Chunk animation
+}
+
 export function useAnimatedText(text: string, delimiter: string = " ") {
     const [cursor, setCursor] = useState(0);
     const [startingCursor, setStartingCursor] = useState(0);
@@ -15,10 +21,7 @@ export function useAnimatedText(text: string, delimiter: string = " ") {
 
     useEffect(() => {
         const parts = text.split(delimiter);
-        const duration =
-            delimiter === "" ? 8 : // Character animation
-                delimiter === " " ? 3 : // Word animation
-                    2; // Chunk animation
+        const duration = animationDuration(delimiter);
 
         const controls = animate(startingCursor, parts.length, {
             duration,

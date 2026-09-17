@@ -12,7 +12,7 @@ interface UserHeroProps {
     onTopicClick: (topicId: string) => void;
 }
 
-export function UserHero({ user, onTopicClick }: UserHeroProps) {
+export function UserHero({ user, onTopicClick }: Readonly<UserHeroProps>) {
     // All content comes from the shared home-content cache (already warm from
     // the Roadmaps section / app prefetch — usually zero network activity here).
     const { data: catalog } = useHomeContent();

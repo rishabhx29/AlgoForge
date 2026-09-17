@@ -22,7 +22,7 @@ interface ProfileViewProps {
   onBack: () => void;
 }
 
-export function ProfileView({ userId, onBack }: ProfileViewProps) {
+export function ProfileView({ userId, onBack }: Readonly<ProfileViewProps>) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);

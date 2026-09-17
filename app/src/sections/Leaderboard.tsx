@@ -28,7 +28,7 @@ interface LeaderboardEntry {
   rank: number;
 }
 
-export function Leaderboard({ onProfileClick }: LeaderboardProps) {
+export function Leaderboard({ onProfileClick }: Readonly<LeaderboardProps>) {
   const { profile } = useAuth();
   const [category, setCategory] = useState<'xp' | 'streak' | 'solved'>('xp');
 

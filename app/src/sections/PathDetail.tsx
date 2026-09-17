@@ -32,7 +32,7 @@ interface TopicInfo {
     description: string;
 }
 
-export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
+export function PathDetail({ pathId, onBack, onTopicClick }: Readonly<PathDetailProps>) {
     const { user } = useAuth();
     const [pathInfo, setPathInfo] = useState<PathInfo | null>(null);
     const [topics, setTopics] = useState<TopicInfo[]>([]);

@@ -20,7 +20,7 @@ interface AuthModalProps {
   defaultMode?: 'login' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Readonly<AuthModalProps>) {
   const [mode, setMode] = useState(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +37,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error || 'Failed to sign in');
+          toast.error(error);
         } else {
           toast.success('Welcome back!');
           onClose();
@@ -45,7 +45,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
       } else {
         const { error } = await signUp(email, password, name);
         if (error) {
-          toast.error(error || 'Failed to sign up');
+          toast.error(error);
         } else {
           toast.success('Account created! Please check your email to verify.');
           onClose();
@@ -62,7 +62,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     setIsLoading(true);
     const { error, isNewUser } = await signInWithGoogle(credential);
     if (error) {
-      toast.error(error || 'Failed to sign in with Google');
+      toast.error(error);
       setIsLoading(false);
     } else {
       toast.success(isNewUser ? 'Account created successfully!' : 'Welcome back!');
@@ -77,6 +77,8 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
     setPassword('');
     setName('');
   };
+
+  const submitLabel = mode === 'login' ? 'Sign In' : 'Create Account';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -195,11 +197,7 @@ export function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalP
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
-              ) : mode === 'login' ? (
-                'Sign In'
-              ) : (
-                'Create Account'
-              )}
+              ) : submitLabel}
             </Button>
           </form>
 

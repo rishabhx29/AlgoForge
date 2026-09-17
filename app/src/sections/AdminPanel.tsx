@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
     LayoutDashboard, Users, FileText, MessageSquare,
     Search, Edit3, Trash2, Ban, Shield, ShieldOff,
@@ -197,6 +198,7 @@ function DashboardTab() {
 // ===================== USERS TAB =====================
 
 function UsersTab() {
+    const roleId = useId();
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
@@ -360,8 +362,9 @@ function UsersTab() {
                             <FormField label="XP Points" type="number" value={editForm.xp_points} onChange={(v) => setEditForm({ ...editForm, xp_points: parseInt(v) || 0 })} />
                             <FormField label="Streak Days" type="number" value={editForm.streak_days} onChange={(v) => setEditForm({ ...editForm, streak_days: parseInt(v) || 0 })} />
                             <div>
-                                <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Role</label>
+                                <label htmlFor={roleId} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Role</label>
                                 <select
+                                    id={roleId}
                                     value={editForm.role}
                                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                                     className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#a088ff]/50"
@@ -384,6 +387,9 @@ function UsersTab() {
 // ===================== CONTENT TAB =====================
 
 function ContentTab() {
+    const pathId = useId();
+    const topicId = useId();
+    const difficultyId = useId();
     const [paths, setPaths] = useState<LearningPath[]>([]);
     const [topics, setTopics] = useState<Topic[]>([]);
     const [problems, setProblems] = useState<AdminProblem[]>([]);
@@ -395,7 +401,13 @@ function ContentTab() {
     const [form, setForm] = useState({ title: '', difficulty: 'Easy', description: '', video_link: '', problem_link: '', tags: '' });
 
     useEffect(() => {
-        getLearningPaths().then((p) => { setPaths(p); setLoading(false); }).catch(console.error);
+        getLearningPaths()
+            .then(setPaths)
+            .catch((error) => {
+                console.error('Failed to load learning paths', error);
+                toast.error('Failed to load learning paths');
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     useEffect(() => {
@@ -476,8 +488,9 @@ function ContentTab() {
             {/* Selectors */}
             <div className="flex flex-wrap gap-4 mb-6">
                 <div className="flex-1 min-w-[200px]">
-                    <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Learning Path</label>
+                    <label htmlFor={pathId} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Learning Path</label>
                     <select
+                        id={pathId}
                         value={selectedPath}
                         onChange={(e) => setSelectedPath(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#a088ff]/50"
@@ -488,8 +501,9 @@ function ContentTab() {
                 </div>
                 {topics.length > 0 && (
                     <div className="flex-1 min-w-[200px]">
-                        <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Topic</label>
+                        <label htmlFor={topicId} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Topic</label>
                         <select
+                            id={topicId}
                             value={selectedTopic}
                             onChange={(e) => setSelectedTopic(e.target.value)}
                             className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#a088ff]/50"
@@ -565,8 +579,9 @@ function ContentTab() {
                         <div className="space-y-4">
                             <FormField label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} placeholder="Two Sum" />
                             <div>
-                                <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Difficulty</label>
+                                <label htmlFor={difficultyId} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Difficulty</label>
                                 <select
+                                    id={difficultyId}
                                     value={form.difficulty}
                                     onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
                                     className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#a088ff]/50"
@@ -597,6 +612,7 @@ function ContentTab() {
 // ===================== FORUM TAB =====================
 
 function ForumTab() {
+    const categoryId = useId();
     const [posts, setPosts] = useState<AdminForumPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -723,8 +739,9 @@ function ForumTab() {
                             <FormField label="Title" value={editForm.title} onChange={(v) => setEditForm({ ...editForm, title: v })} />
                             <FormField label="Content" value={editForm.content} onChange={(v) => setEditForm({ ...editForm, content: v })} multiline />
                             <div>
-                                <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Category</label>
+                                <label htmlFor={categoryId} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">Category</label>
                                 <select
+                                    id={categoryId}
                                     value={editForm.category}
                                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                                     className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#a088ff]/50"
@@ -749,7 +766,7 @@ function ForumTab() {
                             {/* Replies Section */}
                             {editingPost.replies && editingPost.replies.length > 0 && (
                                 <div className="mt-4">
-                                    <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-2 block">Replies ({editingPost.replies.length})</label>
+                                    <h4 className="text-xs font-medium text-white/50 uppercase tracking-wider mb-2 block">Replies ({editingPost.replies.length})</h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                         {editingPost.replies.map((reply: AdminForumReply) => (
                                             <div key={reply.id} className="p-3 rounded-lg bg-white/5 border border-white/5 flex items-start justify-between gap-3">
@@ -783,7 +800,7 @@ function ForumTab() {
 
 // ===================== SHARED COMPONENTS =====================
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Modal({ title, onClose, children }: Readonly<{ title: string; onClose: () => void; children: React.ReactNode }>) {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -811,9 +828,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
     );
 }
 
-function FormField({ label, value, onChange, type = 'text', placeholder = '', multiline = false }: {
+function FormField({ label, value, onChange, type = 'text', placeholder = '', multiline = false }: Readonly<{
     label: string; value: string | number; onChange: (v: string) => void; type?: string; placeholder?: string; multiline?: boolean;
-}) {
+}>) {
     const id = useId();
     return (
         <div>

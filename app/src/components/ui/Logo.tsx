@@ -1,7 +1,7 @@
 
 import { motion } from 'framer-motion';
 
-export function Logo({ className = "", size = 40 }: { className?: string; size?: number }) {
+export function Logo({ className = "", size = 40 }: Readonly<{ className?: string; size?: number }>) {
     return (
         <motion.svg
             width={size}

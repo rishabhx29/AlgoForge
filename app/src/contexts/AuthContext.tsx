@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const isLoading = false;

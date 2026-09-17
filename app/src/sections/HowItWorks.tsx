@@ -38,7 +38,7 @@ interface HowItWorksProps {
   onGetStarted?: () => void;
 }
 
-export function HowItWorks({ onGetStarted }: HowItWorksProps) {
+export function HowItWorks({ onGetStarted }: Readonly<HowItWorksProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,

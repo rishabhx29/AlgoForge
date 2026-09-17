@@ -68,7 +68,7 @@ function getCategoryColor(cat: string): string {
     return found?.color || '#a088ff';
 }
 
-export function CommunityForum({ onBack, onAuthClick }: CommunityForumProps) {
+export function CommunityForum({ onBack, onAuthClick }: Readonly<CommunityForumProps>) {
     const { user } = useAuth();
 
     // List state

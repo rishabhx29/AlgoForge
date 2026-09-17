@@ -125,7 +125,7 @@ function CodeWindow() {
   );
 }
 
-export function Hero({ onGetStarted }: HeroProps) {
+export function Hero({ onGetStarted }: Readonly<HeroProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,

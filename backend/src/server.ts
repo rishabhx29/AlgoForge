@@ -120,11 +120,10 @@ app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', message: 'Server is healthy' });
 });
 
-let server: any;
-if (process.env.NODE_ENV !== 'test') {
-    server = app.listen(port, () => {
+const server = process.env.NODE_ENV !== 'test'
+    ? app.listen(port, () => {
         console.log(`[server]: Server is running at http://localhost:${port}`);
-    });
-}
+    })
+    : undefined;
 
 export { app, server };

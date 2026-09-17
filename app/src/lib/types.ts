@@ -51,7 +51,7 @@ export function buildProgressSets(
   (progress || []).forEach((p) => {
     if (p.status === 'SOLVED') completed.add(p.problem_id);
     if (p.is_bookmarked) bookmarked.add(p.problem_id);
-    if (p.notes && p.notes.trim()) notesMap[p.problem_id] = p.notes;
+    if (p.notes?.trim()) notesMap[p.problem_id] = p.notes;
   });
 
   return { completed, bookmarked, notesMap };

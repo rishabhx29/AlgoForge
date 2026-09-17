@@ -7,7 +7,7 @@ import type { ChatMessage } from '@/api/chat';
 import { useAnimatedText } from '@/components/ui/animated-text';
 
 /* ─── Sparkle Star Icon (Leonardo AI style) ─── */
-function SparkleIcon({ size = 40 }: { size?: number }) {
+function SparkleIcon({ size = 40 }: Readonly<{ size?: number }>) {
     return (
         <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
             <defs>
@@ -26,7 +26,7 @@ function SparkleIcon({ size = 40 }: { size?: number }) {
 }
 
 /* ─── Animated Message Wrapper ─── */
-function AnimatedAssistantMessage({ content, renderContent }: { content: string; renderContent: (text: string) => React.ReactNode }) {
+function AnimatedAssistantMessage({ content, renderContent }: Readonly<{ content: string; renderContent: (text: string) => React.ReactNode }>) {
     const animatedText = useAnimatedText(content, " ");
     return <>{renderContent(animatedText)}</>;
 }
@@ -38,7 +38,7 @@ const QUICK_ACTIONS = [
     { text: '🌳 Explain tree traversals', emoji: '🌳', label: 'Tree Traversals' },
 ];
 
-export function AlgoBot({ onAuthClick }: { onAuthClick: (mode: 'login' | 'signup') => void }) {
+export function AlgoBot({ onAuthClick }: Readonly<{ onAuthClick: (mode: 'login' | 'signup') => void }>) {
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);

@@ -27,7 +27,7 @@ interface TopicDetailProps {
   onBack: () => void;
 }
 
-export function TopicDetail({ topicId, onBack }: TopicDetailProps) {
+export function TopicDetail({ topicId, onBack }: Readonly<TopicDetailProps>) {
   const queryClient = useQueryClient();
   const { refreshProfile } = useAuth();
   const [topic, setTopic] = useState<Topic | null>(null);
