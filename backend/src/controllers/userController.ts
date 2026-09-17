@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { prisma } from '../config/db';
 import { calculateLevel } from '../config/xpConfig';
+import { getOrSet, TTL } from '../utils/cache';
 
 // @desc    Get leaderboard data
 // @route   GET /api/users/leaderboard
@@ -9,70 +10,84 @@ import { calculateLevel } from '../config/xpConfig';
 export const getLeaderboard = async (req: Request, res: Response) => {
     try {
         const { limit = 10, sortBy = 'xp' } = req.query;
+        const limitNum = Math.min(Number(limit) || 10, 100);
+        const sortKey = sortBy === 'solved' || sortBy === 'streak' ? sortBy : 'xp';
 
-        let pipeline: any[] = [];
+        // Cached for 30s: the leaderboard is read by every visitor but only
+        // changes when someone solves a problem. A short TTL keeps ranks fresh
+        // while turning repeated scans into a single query per interval.
+        const formatted = await getOrSet(`leaderboard:${sortKey}:${limitNum}`, TTL.LEADERBOARD, async () => {
+            // Sort on the raw field BEFORE projecting. Sorting after $project
+            // (previous behavior) forces Mongo to materialize every user doc
+            // in memory; sorting first lets an index on the sort field drive
+            // the query. Only the computed `solvedCount` sort still needs the
+            // project-first path.
+            let pipeline: any[] = [];
 
-        pipeline.push({
-            $project: {
-                name: 1,
-                pid: 1,
-                xp_points: 1,
-                streak_days: 1,
-                solvedProblems: 1,
-                avatar: 1,
-                solvedCount: { $size: { $ifNull: ["$solvedProblems", []] } }
+            if (sortKey === 'xp') {
+                pipeline.push({ $sort: { xp_points: -1 } });
+            } else if (sortKey === 'streak') {
+                pipeline.push({ $sort: { streak_days: -1 } });
             }
-        });
 
-        if (sortBy === 'solved') {
-            pipeline.push({ $sort: { solvedCount: -1 } });
-        } else if (sortBy === 'streak') {
-            pipeline.push({ $sort: { streak_days: -1 } });
-        } else {
-            pipeline.push({ $sort: { xp_points: -1 } });
-        }
+            pipeline.push({
+                $project: {
+                    name: 1,
+                    pid: 1,
+                    xp_points: 1,
+                    streak_days: 1,
+                    solvedProblems: 1,
+                    avatar: 1,
+                    solvedCount: { $size: { $ifNull: ["$solvedProblems", []] } }
+                }
+            });
 
-        pipeline.push({ $limit: Number(limit) });
+            if (sortKey === 'solved') {
+                pipeline.push({ $sort: { solvedCount: -1 } });
+            }
 
-        const leaderboard = await prisma.user.aggregateRaw({ pipeline }) as unknown as any[];
+            pipeline.push({ $limit: limitNum });
 
-        // Ensure every ranked user has a public surrogate key. Users created
-        // before `pid` existed get one lazily (backfill-on-read). The pid is
-        // random and stored — never derived from the ObjectId.
-        for (const row of leaderboard as any[]) {
-            if (!row.pid) {
-                const pid = randomPid();
-                try {
-                    await prisma.user.updateMany({
-                        where: { id: String(row._id?.$oid || row._id), pid: null },
-                        data: { pid }
-                    });
-                    row.pid = pid;
-                } catch {
-                    // Unique-collision (astronomically unlikely) or lost race —
-                    // re-read the row so we still return a valid key.
-                    const fresh = await prisma.user.findUnique({
-                        where: { id: String(row._id?.$oid || row._id) },
-                        select: { pid: true }
-                    });
-                    row.pid = fresh?.pid || pid;
+            const leaderboard = await prisma.user.aggregateRaw({ pipeline }) as unknown as any[];
+
+            // Ensure every ranked user has a public surrogate key. Users created
+            // before `pid` existed get one lazily (backfill-on-read). The pid is
+            // random and stored — never derived from the ObjectId.
+            for (const row of leaderboard as any[]) {
+                if (!row.pid) {
+                    const pid = randomPid();
+                    try {
+                        await prisma.user.updateMany({
+                            where: { id: String(row._id?.$oid || row._id), pid: null },
+                            data: { pid }
+                        });
+                        row.pid = pid;
+                    } catch {
+                        // Unique-collision (astronomically unlikely) or lost race —
+                        // re-read the row so we still return a valid key.
+                        const fresh = await prisma.user.findUnique({
+                            where: { id: String(row._id?.$oid || row._id) },
+                            select: { pid: true }
+                        });
+                        row.pid = fresh?.pid || pid;
+                    }
                 }
             }
-        }
 
-        const formattedLeaderboard = leaderboard.map((user: any, index: number) => ({
-            // Public surrogate key: the raw Mongo ObjectId is never exposed,
-            // so harvested ids cannot be replayed as JWT subjects.
-            pid: user.pid,
-            name: user.name,
-            avatar: user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'),
-            xp: user.xp_points || 0,
-            streak: user.streak_days || 0,
-            solved: user.solvedCount || 0,
-            rank: index + 1
-        }));
+            return leaderboard.map((user: any, index: number) => ({
+                // Public surrogate key: the raw Mongo ObjectId is never exposed,
+                // so harvested ids cannot be replayed as JWT subjects.
+                pid: user.pid,
+                name: user.name,
+                avatar: user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'),
+                xp: user.xp_points || 0,
+                streak: user.streak_days || 0,
+                solved: user.solvedCount || 0,
+                rank: index + 1
+            }));
+        });
 
-        res.status(200).json(formattedLeaderboard);
+        res.status(200).json(formatted);
 
     } catch (error) {
         console.error(error);

@@ -1,5 +1,97 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getOrSet, invalidate, TTL } from '../utils/cache';
+
+/**
+ * Slim projection for problem *list* endpoints. List views (Problems page,
+ * Roadmaps cards, UserHero, Dashboard) only use id/title/difficulty/tags/links
+ * — never the full markdown description or the test-case suite. Omitting those
+ * two fields cuts the payload of `/api/content/problems` by ~10x, which is the
+ * single biggest transfer win for every page that shows a problem list.
+ *
+ * The full document (description + testCases) is still returned by
+ * `getProblemById`, which is what ProblemWorkspace consumes before rendering
+ * the editor, so nothing user-visible changes.
+ */
+const LIST_PROBLEM_SELECT = {
+    id: true,
+    title: true,
+    topic_slug: true,
+    difficulty: true,
+    video_link: true,
+    problem_link: true,
+    tags: true,
+    order_index: true,
+} as const;
+
+/** Prisma row → list problem (adds `topic_id` alias used by older UI code). */
+function toListProblem(p: {
+    id: string; title: string; topic_slug: string; difficulty: string;
+    video_link: string | null; problem_link: string | null; tags: string[]; order_index: number;
+}) {
+    return { ...p, topic_id: p.topic_slug };
+}
+
+/**
+ * Single-pass loader for the whole content catalog. Replaces the previous
+ * N+1 pattern (per-path topic queries + per-path problem counts) with exactly
+ * three queries regardless of how many paths/topics exist, and is the backing
+ * store for both `/api/content/paths` and the combined `/api/content/home`.
+ */
+async function loadCatalog() {
+    const [paths, topics, problems] = await Promise.all([
+        prisma.learningPath.findMany({ orderBy: { order_index: 'asc' } }),
+        prisma.topic.findMany({ orderBy: { order_index: 'asc' } }),
+        prisma.problem.findMany({
+            orderBy: { order_index: 'asc' },
+            select: LIST_PROBLEM_SELECT,
+        }),
+    ]);
+
+    const problemsByTopic = new Map<string, number>();
+    for (const p of problems) {
+        problemsByTopic.set(p.topic_slug, (problemsByTopic.get(p.topic_slug) || 0) + 1);
+    }
+
+    // Map slug back to id for frontend compatibility, add per-path problem count.
+    const pathsWithCounts = paths.map((path: any) => ({
+        ...path,
+        id: path.slug,
+        totalProblems: topics
+            .filter((t: any) => t.path_slug === path.slug)
+            .reduce((sum: number, t: any) => sum + (problemsByTopic.get(t.slug) || 0), 0),
+    }));
+
+    const topicsWithIds = topics.map((t: any) => ({ ...t, id: t.slug }));
+    const listProblems = problems.map(toListProblem);
+
+    return { paths: pathsWithCounts, topics: topicsWithIds, problems: listProblems };
+}
+
+/** Cached catalog (5 min TTL, invalidated on admin content mutations). */
+function catalog() {
+    return getOrSet('content:catalog', TTL.CONTENT, loadCatalog);
+}
+
+/**
+ * @desc    Get the full content catalog in one request (paths + topics + problems)
+ * @route   GET /api/content/home
+ * @access  Public
+ *
+ * The landing page previously fetched paths, then topics per path, then
+ * problems per topic — dozens of sequential HTTP requests that each waited on
+ * a possibly cold-starting backend. This endpoint returns everything the home
+ * page needs in a single cached response; the client groups problems by topic
+ * locally (they carry `topic_id`), so the rendered result is identical.
+ */
+export const getHomeContent = async (req: Request, res: Response) => {
+    try {
+        const catalog_ = await catalog();
+        res.json(catalog_);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
 
 /**
  * @desc    Get all learning paths
@@ -8,35 +100,20 @@ import { prisma } from '../config/db';
  *
  * Fetches all learning paths ordered by their display index, enriches each
  * path with a total problem count, and maps `slug` to `id` for frontend
- * compatibility.
+ * compatibility. Served from the shared catalog cache (was N+1 per path).
  *
  * @param req - Express request object.
  * @param res - Express response object. Returns a JSON array of learning paths.
  */
 export const getLearningPaths = async (req: Request, res: Response) => {
     try {
-        const paths = await prisma.learningPath.findMany({
-            orderBy: { order_index: 'asc' }
-        });
-
-        const pathsWithCounts = await Promise.all(paths.map(async (path: any) => {
-            const topics = await prisma.topic.findMany({
-                where: { path_slug: path.slug },
-                select: { slug: true }
-            });
-            const topicSlugs = topics.map(t => t.slug);
-            const totalProblems = await prisma.problem.count({
-                where: { topic_slug: { in: topicSlugs } }
-            });
-            // Map slug back to id for frontend compatibility
-            return { ...path, id: path.slug, totalProblems };
-        }));
-
-        res.json(pathsWithCounts);
+        const { paths } = await catalog();
+        res.json(paths);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
 
 /**
  * @desc    Get topics by learning path ID (slug)
@@ -101,10 +178,8 @@ export const getTopicById = async (req: Request, res: Response) => {
  */
 export const getAllTopics = async (req: Request, res: Response) => {
     try {
-        const topics = await prisma.topic.findMany({
-            orderBy: { order_index: 'asc' }
-        });
-        res.json(topics.map(t => ({ ...t, id: t.slug })));
+        const { topics } = await catalog();
+        res.json(topics);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -124,11 +199,8 @@ export const getAllTopics = async (req: Request, res: Response) => {
 export const getProblemsByTopic = async (req: Request, res: Response) => {
     try {
         const { topicId } = req.params;
-        const problems = await prisma.problem.findMany({
-            where: { topic_slug: topicId },
-            orderBy: { order_index: 'asc' }
-        });
-        res.json(problems);
+        const { problems } = await catalog();
+        res.json(problems.filter((p: any) => p.topic_slug === topicId));
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -146,9 +218,7 @@ export const getProblemsByTopic = async (req: Request, res: Response) => {
  */
 export const getAllProblems = async (req: Request, res: Response) => {
     try {
-        const problems = await prisma.problem.findMany({
-            orderBy: { order_index: 'asc' }
-        });
+        const { problems } = await catalog();
         res.json(problems);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

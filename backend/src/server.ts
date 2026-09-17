@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import connectDB from './config/db';
 
 dotenv.config();
@@ -9,6 +10,11 @@ import { config } from './config/env';
 
 const app: Express = express();
 const port = config.PORT || 5000;
+
+// Gzip every JSON response. Problem lists and leaderboard payloads compress
+// ~5-8x, which directly cuts time-to-interactive for users on slow links.
+// Must be registered before routes.
+app.use(compression());
 
 // Middleware
 const allowedOrigins = [
