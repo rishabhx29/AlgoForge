@@ -24,7 +24,12 @@ export function NotesModal({
 }: NotesModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Close notes backdrop"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a088ff]"
+        onClick={onClose}
+      />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

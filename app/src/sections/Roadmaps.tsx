@@ -133,7 +133,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
                 variants={itemVariants}
                 onMouseEnter={() => setHoveredCategory(category.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
-                className="group relative"
+                className="group relative focus-within:ring-2 focus-within:ring-[#a088ff] rounded-2xl"
               >
                 <div
                   className="relative h-full glass rounded-2xl p-6 overflow-hidden card-hover cursor-pointer"
@@ -143,7 +143,6 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
                       : 'translateY(0) scale(1)',
                     transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
-                  onClick={() => onPathClick(category.id)}
                 >
                   {/* Gradient Border Effect */}
                   <div
@@ -217,13 +216,13 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
 
                     {/* CTA */}
                     <div className="mt-6 pt-4 border-t border-white/10">
-                      <button
+                      <span
                         className="flex items-center gap-2 text-sm font-medium group/btn"
                         style={{ color: category.color }}
                       >
                         Start Learning
                         <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
+                      </span>
                     </div>
                   </div>
 
@@ -231,6 +230,12 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
                   <div
                     className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full blur-[60px] opacity-0 group-hover:opacity-50 transition-opacity duration-500"
                     style={{ background: category.color }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Start learning ${category.title}`}
+                    onClick={() => onPathClick(category.id)}
+                    className="absolute inset-0 z-20 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a088ff]"
                   />
                 </div>
               </motion.div>

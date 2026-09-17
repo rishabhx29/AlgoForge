@@ -264,7 +264,7 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
                                                     : ' Ready to tackle the next challenge?'}
                                             </p>
                                             <Button
-                                                onClick={() => onTopicClick(continueTopicData.id || continueTopicData.id)}
+                                                onClick={() => onTopicClick(continueTopicData.id)}
                                                 className="bg-[#a088ff] text-white hover:bg-[#8e72ff] rounded-xl px-8 py-6 text-lg"
                                             >
                                                 <PlayCircle className="w-5 h-5 mr-2" />

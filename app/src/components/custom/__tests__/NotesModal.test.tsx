@@ -18,6 +18,20 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof NotesModal>>
   return props;
 }
 
+describe.each(['{Enter}', ' '])('NotesModal keyboard dismissal (%s)', (key) => {
+  it('lets keyboard users focus and activate the backdrop', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderModal();
+    // The textarea receives autofocus; tab past the document boundary to the backdrop.
+    await user.tab();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close notes backdrop' })).toHaveFocus();
+    await user.keyboard(key);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+
 describe('NotesModal', () => {
   it('renders the problem title and current note', () => {
     renderModal();
@@ -63,10 +77,8 @@ describe('NotesModal', () => {
   it('closes when the backdrop is clicked', async () => {
     const { onClose } = renderModal();
 
-    // Backdrop is the sibling div rendered before the panel.
-    const backdrop = document.querySelector('.fixed.inset-0 > .absolute.inset-0');
-    expect(backdrop).not.toBeNull();
-    await userEvent.click(backdrop as Element);
+    const backdrop = screen.getByRole('button', { name: 'Close notes backdrop' });
+    await userEvent.click(backdrop);
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

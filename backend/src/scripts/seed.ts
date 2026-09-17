@@ -55,7 +55,7 @@ const seedData = async () => {
         ];
 
         const problems = allRawProblems.map((p, index) => {
-            const slug = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const slug = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(?:^-+)|(?:-+$)/g, '');
             return {
                 title: p.title,
                 topic_slug: p.topic_id,
