@@ -7,10 +7,46 @@ import { config } from '../config/env';
 
 const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
-// Generate JWT
+/** bcrypt cost factor — single source of truth for password hashing. */
+const BCRYPT_ROUNDS = 10;
+
+/** Generate a JWT for a user id (30-day expiry). */
 const generateToken = (id: string) => {
     return jwt.sign({ id }, config.JWT_SECRET!, { expiresIn: '30d' });
 };
+
+/** Shape returned to the client after any successful authentication. */
+interface AuthUserSource {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    xp_points: number;
+    streak_days: number;
+    solvedProblems: unknown[];
+    bookmarks: string[];
+    activityLog: unknown[];
+}
+
+/**
+ * Build the auth response body from a user record. Shared by register / login /
+ * Google sign-in so the three endpoints can never drift apart.
+ */
+function toAuthResponse(user: AuthUserSource, extra: Record<string, unknown> = {}) {
+    return {
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user.id),
+        xp_points: user.xp_points,
+        streak_days: user.streak_days,
+        solvedProblems: user.solvedProblems,
+        bookmarks: user.bookmarks,
+        activityLog: user.activityLog,
+        ...extra
+    };
+}
 
 // @desc    Register new user
 // @route   POST /api/users
@@ -31,7 +67,7 @@ export const registerUser = async (req: Request, res: Response) => {
             return;
         }
 
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(BCRYPT_ROUNDS);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const user = await prisma.user.create({
@@ -43,18 +79,7 @@ export const registerUser = async (req: Request, res: Response) => {
         });
 
         if (user) {
-            res.status(201).json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user.id),
-                xp_points: user.xp_points,
-                streak_days: user.streak_days,
-                solvedProblems: user.solvedProblems,
-                bookmarks: user.bookmarks,
-                activityLog: user.activityLog
-            });
+            res.status(201).json(toAuthResponse(user));
         } else {
             res.status(400).json({ message: 'Invalid user data' });
         }
@@ -83,18 +108,7 @@ export const loginUser = async (req: Request, res: Response) => {
                 res.status(403).json({ message: 'Your account has been suspended' });
                 return;
             }
-            res.json({
-                _id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user.id),
-                xp_points: user.xp_points,
-                streak_days: user.streak_days,
-                solvedProblems: user.solvedProblems,
-                bookmarks: user.bookmarks,
-                activityLog: user.activityLog
-            });
+            res.json(toAuthResponse(user));
         } else {
             res.status(400).json({ message: 'Invalid credentials' });
         }
@@ -152,19 +166,7 @@ export const googleAuth = async (req: Request, res: Response) => {
             });
         }
 
-        res.status(200).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateToken(user.id),
-            xp_points: user.xp_points,
-            streak_days: user.streak_days,
-            solvedProblems: user.solvedProblems,
-            bookmarks: user.bookmarks,
-            activityLog: user.activityLog,
-            isNewUser
-        });
+        res.status(200).json(toAuthResponse(user, { isNewUser }));
 
     } catch (error) {
         console.error('Google Auth Error:', error);

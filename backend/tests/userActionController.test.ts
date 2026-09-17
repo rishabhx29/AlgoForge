@@ -249,16 +249,48 @@ describe('XP logic in updateProblemStatus', () => {
 
         await updateProblemStatus(req, res);
 
+        // baseUser has 100 XP → 100 - 25 = 75. Written as an absolute value
+        // (not `decrement`) so the result can never dip below zero.
         expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
-            data: expect.objectContaining({ xp_points: { decrement: 25 } })
+            data: expect.objectContaining({ xp_points: 75 })
         }));
+    });
+
+    it('clamps XP at 0 instead of going negative when un-solving', async () => {
+        (prisma.userProgress.findUnique as any).mockResolvedValue({ id: 'p1', status: 'SOLVED' });
+        (prisma.userProgress.update as any).mockResolvedValue({ id: 'p1', status: 'TODO' });
+        (prisma.user.findUnique as any).mockResolvedValue({
+            ...baseUser,
+            xp_points: 10,
+            solvedProblems: [{ problemId: 'prob1', solvedAt: new Date() }]
+        });
+        (prisma.user.update as any).mockResolvedValue({});
+
+        const req = mockReq({ problemId: 'prob1' }, { status: 'TODO' });
+        const res = mockRes();
+
+        await updateProblemStatus(req, res);
+
+        expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ xp_points: 0 })
+        }));
+    });
+
+    it('returns 400 for an unrecognized status value', async () => {
+        const req = mockReq({ problemId: 'prob1' }, { status: 'NOT_A_STATUS' });
+        const res = mockRes();
+
+        await updateProblemStatus(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(prisma.userProgress.findUnique).not.toHaveBeenCalled();
     });
 
     it('does not change XP when status changes between non-SOLVED states', async () => {
         (prisma.userProgress.findUnique as any).mockResolvedValue({ id: 'p1', status: 'TODO' });
-        (prisma.userProgress.update as any).mockResolvedValue({ id: 'p1', status: 'IN_PROGRESS' });
+        (prisma.userProgress.update as any).mockResolvedValue({ id: 'p1', status: 'ATTEMPTED' });
 
-        const req = mockReq({ problemId: 'prob1' }, { status: 'IN_PROGRESS' });
+        const req = mockReq({ problemId: 'prob1' }, { status: 'ATTEMPTED' });
         const res = mockRes();
 
         await updateProblemStatus(req, res);

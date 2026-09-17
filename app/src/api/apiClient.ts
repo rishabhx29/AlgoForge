@@ -25,11 +25,6 @@ let sessionExpiryHandled = false;
  * axios config carrying the stored JWT. The apiClient request interceptor
  * already attaches this header automatically, so most callers can omit it.
  */
-export const getAuthHeader = () => {
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  return { headers: { Authorization: `Bearer ${token}` } };
-};
-
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });

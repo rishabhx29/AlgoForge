@@ -30,7 +30,6 @@ interface LeaderboardEntry {
 
 export function Leaderboard({ onProfileClick }: LeaderboardProps) {
   const { profile } = useAuth();
-  const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
   const [category, setCategory] = useState<'xp' | 'streak' | 'solved'>('xp');
 
   // Cached (30s stale) + placeholderData: switching XP/Streak/Solved tabs
@@ -121,22 +120,6 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
         >
-          {/* Time Range */}
-          <div className="flex gap-2 p-1 rounded-xl bg-white/5">
-            {(['all', 'month', 'week'] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeRange === range
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/60 hover:text-white'
-                  }`}
-              >
-                {range === 'all' ? 'All Time' : range === 'month' ? 'This Month' : 'This Week'}
-              </button>
-            ))}
-          </div>
-
           {/* Category */}
           <div className="flex gap-2">
             {[

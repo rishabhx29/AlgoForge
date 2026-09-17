@@ -38,12 +38,3 @@ export function PageSkeleton() {
     </div>
   );
 }
-
-/** Minimal inline spinner for auth-gated route placeholders */
-export function InlineSpinner() {
-  return (
-    <div className="min-h-screen bg-[#141414] flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-[#a088ff] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-}

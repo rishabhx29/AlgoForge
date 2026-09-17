@@ -1,8 +1,28 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/db';
 import { calculateLevel } from '../config/xpConfig';
 import { getOrSet, TTL } from '../utils/cache';
+
+/** Mongo aggregate rows return `_id` either as a raw string or as `{ $oid }`. */
+type AggregateId = string | { $oid?: string } | undefined;
+
+/** Normalize an aggregate `_id` into the plain ObjectId string. */
+function objectIdOf(id: AggregateId): string {
+    if (typeof id === 'string') return id;
+    return id?.$oid ?? '';
+}
+
+interface LeaderboardRow {
+    _id?: AggregateId;
+    pid?: string | null;
+    name?: string;
+    xp_points?: number;
+    streak_days?: number;
+    solvedCount?: number;
+    avatar?: string | null;
+}
 
 // @desc    Get leaderboard data
 // @route   GET /api/users/leaderboard
@@ -14,15 +34,10 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         const sortKey = sortBy === 'solved' || sortBy === 'streak' ? sortBy : 'xp';
 
         // Cached for 30s: the leaderboard is read by every visitor but only
-        // changes when someone solves a problem. A short TTL keeps ranks fresh
-        // while turning repeated scans into a single query per interval.
+        // changes when someone solves a problem.
         const formatted = await getOrSet(`leaderboard:${sortKey}:${limitNum}`, TTL.LEADERBOARD, async () => {
-            // Sort on the raw field BEFORE projecting. Sorting after $project
-            // (previous behavior) forces Mongo to materialize every user doc
-            // in memory; sorting first lets an index on the sort field drive
-            // the query. Only the computed `solvedCount` sort still needs the
-            // project-first path.
-            let pipeline: any[] = [];
+            // Sort on the raw field before projecting so indexed order drives the query.
+            const pipeline: Prisma.InputJsonValue[] = [];
 
             if (sortKey === 'xp') {
                 pipeline.push({ $sort: { xp_points: -1 } });
@@ -48,17 +63,17 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
             pipeline.push({ $limit: limitNum });
 
-            const leaderboard = await prisma.user.aggregateRaw({ pipeline }) as unknown as any[];
+            const leaderboard = await prisma.user.aggregateRaw({ pipeline }) as unknown as LeaderboardRow[];
 
-            // Ensure every ranked user has a public surrogate key. Users created
-            // before `pid` existed get one lazily (backfill-on-read). The pid is
+            // Ensure every ranked user has a public surrogate key. The pid is
             // random and stored — never derived from the ObjectId.
-            for (const row of leaderboard as any[]) {
+            for (const row of leaderboard) {
                 if (!row.pid) {
                     const pid = randomPid();
+                    const rowId = objectIdOf(row._id);
                     try {
                         await prisma.user.updateMany({
-                            where: { id: String(row._id?.$oid || row._id), pid: null },
+                            where: { id: rowId, pid: null },
                             data: { pid }
                         });
                         row.pid = pid;
@@ -66,7 +81,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
                         // Unique-collision (astronomically unlikely) or lost race —
                         // re-read the row so we still return a valid key.
                         const fresh = await prisma.user.findUnique({
-                            where: { id: String(row._id?.$oid || row._id) },
+                            where: { id: rowId },
                             select: { pid: true }
                         });
                         row.pid = fresh?.pid || pid;
@@ -74,9 +89,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
                 }
             }
 
-            return leaderboard.map((user: any, index: number) => ({
-                // Public surrogate key: the raw Mongo ObjectId is never exposed,
-                // so harvested ids cannot be replayed as JWT subjects.
+            return leaderboard.map((user, index) => ({
                 pid: user.pid,
                 name: user.name,
                 avatar: user.avatar || (user.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'),
@@ -106,7 +119,7 @@ function randomPid(): string {
 // @desc    Get dashboard stats for logged-in user (rank, streak, weekly activity)
 // @route   GET /api/users/dashboard-stats
 // @access  Private
-export const getDashboardStats = async (req: Request | any, res: Response) => {
+export const getDashboardStats = async (req: Request, res: Response) => {
     try {
         const userId = req.user.id;
         const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -120,13 +133,8 @@ export const getDashboardStats = async (req: Request | any, res: Response) => {
         const totalUsers = await prisma.user.count();
         const topPercent = totalUsers > 0 ? Math.round((rank / totalUsers) * 100) : 100;
 
-        // ─────────────────────────────────────────────
-        // UTC-based streak validation for dashboard display
-        // ─────────────────────────────────────────────
-        // Reset streak to 0 if last_active is not today or yesterday (UTC).
-        // This handles cases where the user missed a UTC day.
-        // All date comparisons use UTC via toISOString().split('T')[0].
-        // ─────────────────────────────────────────────
+        // UTC-based streak validation for dashboard display: reset to 0 when
+        // last_active is neither today nor yesterday (UTC).
         let currentStreak = user.streak_days || 0;
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
@@ -148,7 +156,7 @@ export const getDashboardStats = async (req: Request | any, res: Response) => {
 
         const activityLog = user.activityLog || [];
         const weeklyActivity = weekDays.map((dateStr: string) => {
-            const entry = activityLog.find((log: any) => log.date === dateStr);
+            const entry = activityLog.find((log) => log.date === dateStr);
             return {
                 date: dateStr,
                 count: entry ? entry.count : 0
@@ -170,7 +178,7 @@ export const getDashboardStats = async (req: Request | any, res: Response) => {
 // @desc    Get the authenticated user's leaderboard rank (by XP)
 // @route   GET /api/users/leaderboard/me
 // @access  Private
-export const getMyRank = async (req: Request | any, res: Response) => {
+export const getMyRank = async (req: Request, res: Response) => {
     try {
         const userId = req.user.id;
         const user = await prisma.user.findUnique({
@@ -194,11 +202,7 @@ export const getMyRank = async (req: Request | any, res: Response) => {
     }
 };
 
-// @desc    Resolve a public profile surrogate key (pid) to a user id
-// @route   GET /api/users/profile-key/:pid
-// @access  Public
-// The public leaderboard exposes only the surrogate pid — never raw Mongo
-// ObjectIds — so clients resolve the pid here before loading the profile.
+// The public leaderboard exposes only the surrogate pid — clients resolve it here.
 export const resolveProfileKey = async (req: Request, res: Response) => {
     try {
         const { pid } = req.params;
@@ -260,8 +264,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
     }
 };
 
-
-export const updateUserProfile = async (req: Request | any, res: Response) => {
+export const updateUserProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.params.userId;
         const { bio, avatarUrl } = req.body;

@@ -4,27 +4,19 @@ import {
     ArrowLeft,
     CheckCircle2,
     ChevronRight,
-    Binary,
-    Cpu,
-    GitBranch,
-    Network,
-    Briefcase,
-    Server,
     BarChart3
 } from 'lucide-react';
 import { getTopicsByPath, getLearningPaths, getProblemsByTopic } from '@/api/content';
 import { getUserProgress } from '@/api/userActions';
 import { useAuth } from '@/contexts/AuthContext';
+import { contentIcon } from '@/lib/contentIcons';
+import { buildProgressSets } from '@/lib/types';
 
 interface PathDetailProps {
     pathId: string;
     onBack: () => void;
     onTopicClick: (topicId: string) => void;
 }
-
-const iconMap: Record<string, React.ElementType> = {
-    Binary, Cpu, GitBranch, Network, Briefcase, Server
-};
 
 interface PathInfo {
     id: string;
@@ -64,11 +56,7 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
                 if (user) {
                     try {
                         const progressData = await getUserProgress();
-                        solvedSet = new Set<string>(
-                            progressData
-                                .filter((p: any) => p.status === 'SOLVED')
-                                .map((p: any) => p.problem_id)
-                        );
+                        solvedSet = buildProgressSets(progressData).completed;
                     } catch { /* user not logged in */ }
                 }
 
@@ -119,7 +107,7 @@ export function PathDetail({ pathId, onBack, onTopicClick }: PathDetailProps) {
         );
     }
 
-    const Icon = iconMap[pathInfo.icon] || Binary;
+    const Icon = contentIcon(pathInfo.icon);
     const totalProblems = Object.values(topicStats).reduce((sum, s) => sum + s.total, 0);
     const totalCompleted = Object.values(topicStats).reduce((sum, s) => sum + s.completed, 0);
     const progressPercent = totalProblems > 0 ? Math.round((totalCompleted / totalProblems) * 100) : 0;

@@ -24,6 +24,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHomeContent } from '@/hooks/useContent';
 import { getUserProgress, getDashboardStats } from '@/api/userActions';
 import { SOLVE_XP, XP_PER_LEVEL, calculateLevel } from '@/utils/xpConfig';
+import { timeAgo } from '@/lib/time';
+import { difficultyColor } from '@/lib/theme';
 
 interface DashboardProps {
   onNavigate: (view: 'home' | 'dashboard' | 'topic' | 'problems' | 'notes' | 'leaderboard' | 'daily-challenges', topicId?: string) => void;
@@ -91,17 +93,6 @@ function useCountUp(target: number, duration = 1200) {
 }
 
 /* ─── Time-Ago Formatter ─── */
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const { profile, refreshProfile } = useAuth();
@@ -851,8 +842,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </h3>
               <div className="space-y-2">
                 {stats.recentActivity.length > 0 ? stats.recentActivity.map((activity: RecentActivityItem, index: number) => {
-                  const diffColor = activity.difficulty === 'Easy' ? '#22c55e' :
-                    activity.difficulty === 'Medium' ? '#eab308' : '#ef4444';
+                  const diffColor = difficultyColor(activity.difficulty);
                   return (
                     <motion.div
                       key={index}

@@ -1,33 +1,18 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Binary,
-  Cpu,
-  GitBranch,
-  Network,
-  Briefcase,
-  Server,
-  ArrowRight,
-  PlayCircle
-} from 'lucide-react';
+import { ArrowRight, PlayCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProgress } from '@/api/userActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStats } from '@/hooks/useStats';
 import { useHomeContent } from '@/hooks/useContent';
+import { contentIcon } from '@/lib/contentIcons';
+import { buildProgressSets } from '@/lib/types';
+import type { Topic } from '@/lib/types';
 
 interface RoadmapsProps {
   onPathClick: (pathId: string) => void;
 }
-
-const iconMap: Record<string, React.ElementType> = {
-  Binary,
-  Cpu,
-  GitBranch,
-  Network,
-  Briefcase,
-  Server
-};
 
 export function Roadmaps({ onPathClick }: RoadmapsProps) {
   const { user } = useAuth();
@@ -51,7 +36,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
 
   const categories = catalog?.paths ?? [];
   const topicsMap = useMemo(() => {
-    const map: Record<string, any[]> = {};
+    const map: Record<string, Topic[]> = {};
     for (const topic of catalog?.topics ?? []) {
       (map[topic.path_slug] ||= []).push(topic);
     }
@@ -60,11 +45,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
 
   const pathSolvedCounts = useMemo(() => {
     if (!user || !progressData || !catalog) return {};
-    const solvedSet = new Set(
-      progressData
-        .filter((p: any) => p.status === 'SOLVED')
-        .map((p: any) => p.problem_id)
-    );
+    const solvedSet = buildProgressSets(progressData).completed;
     // Map each topic slug to its parent path once, then bucket solved problems.
     const topicToPath = new Map<string, string>();
     for (const topic of catalog.topics) {
@@ -140,7 +121,7 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {categories.map((category) => {
-            const Icon = iconMap[category.icon] || Binary;
+            const Icon = contentIcon(category.icon);
             const topics = topicsMap[category.id] || [];
             const totalProblems = category.totalProblems || 0;
             const solvedCount = pathSolvedCounts[category.id] || 0;
