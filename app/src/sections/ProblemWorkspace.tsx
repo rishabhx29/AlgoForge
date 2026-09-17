@@ -25,7 +25,7 @@ const SUPPORTED_LANGUAGES = [
  * @param problemId - The unique identifier of the problem to load.
  * @param onBack    - Callback invoked when the user navigates back to the problem list.
  */
-export function ProblemWorkspace({ problemId, onBack }: ProblemWorkspaceProps) {
+export function ProblemWorkspace({ problemId, onBack }: Readonly<ProblemWorkspaceProps>) {
   const [problem, setProblem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState<string>('// Write your code here');

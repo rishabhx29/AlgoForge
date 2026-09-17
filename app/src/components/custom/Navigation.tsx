@@ -32,7 +32,7 @@ interface NavigationProps {
   onAuthClick: (mode: 'login' | 'signup') => void;
 }
 
-export function Navigation({ currentView, onNavigate, onAuthClick }: NavigationProps) {
+export function Navigation({ currentView, onNavigate, onAuthClick }: Readonly<NavigationProps>) {
   const { user, profile, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

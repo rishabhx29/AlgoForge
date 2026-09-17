@@ -9,7 +9,7 @@ interface CallToActionProps {
   onGetStarted: () => void;
 }
 
-export function CallToAction({ onGetStarted }: CallToActionProps) {
+export function CallToAction({ onGetStarted }: Readonly<CallToActionProps>) {
   const { userCount } = useStats();
 
   // Pre-compute random values to avoid Math.random() in render

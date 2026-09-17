@@ -48,7 +48,7 @@ const hashString = (str: string): number => {
 
     return hash >>> 0;
 };
-export function DailyChallenges({ onBack }: DailyChallengesProps) {
+export function DailyChallenges({ onBack }: Readonly<DailyChallengesProps>) {
     const { refreshProfile } = useAuth();
     const [allProblems, setAllProblems] = useState<DailyProblem[]>([]);
     const [completedProblems, setCompletedProblems] = useState<Set<string>>(new Set());

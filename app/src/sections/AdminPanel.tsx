@@ -800,7 +800,7 @@ function ForumTab() {
 
 // ===================== SHARED COMPONENTS =====================
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Modal({ title, onClose, children }: Readonly<{ title: string; onClose: () => void; children: React.ReactNode }>) {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -828,9 +828,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
     );
 }
 
-function FormField({ label, value, onChange, type = 'text', placeholder = '', multiline = false }: {
+function FormField({ label, value, onChange, type = 'text', placeholder = '', multiline = false }: Readonly<{
     label: string; value: string | number; onChange: (v: string) => void; type?: string; placeholder?: string; multiline?: boolean;
-}) {
+}>) {
     const id = useId();
     return (
         <div>

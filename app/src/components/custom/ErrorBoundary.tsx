@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('Uncaught error in React tree:', error, errorInfo);
   }
 
-  private handleGoHome = () => {
+  private readonly handleGoHome = () => {
     window.location.hash = '';
     window.location.reload();
   };

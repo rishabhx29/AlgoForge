@@ -14,7 +14,7 @@ interface RoadmapsProps {
   onPathClick: (pathId: string) => void;
 }
 
-export function Roadmaps({ onPathClick }: RoadmapsProps) {
+export function Roadmaps({ onPathClick }: Readonly<RoadmapsProps>) {
   const { user } = useAuth();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { problemCount, videoCount, roadmapCount, userCount } = useStats();

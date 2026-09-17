@@ -94,7 +94,7 @@ function useCountUp(target: number, duration = 1200) {
 
 /* ─── Time-Ago Formatter ─── */
 
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
   const { profile, refreshProfile } = useAuth();
   
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);

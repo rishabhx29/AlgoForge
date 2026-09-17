@@ -34,7 +34,7 @@ const socialLinks = [
   { icon: Twitter, href: 'https://x.com/RishabhTri8805', label: 'Twitter' },
 ];
 
-export function Footer({ onNavigate }: FooterProps) {
+export function Footer({ onNavigate }: Readonly<FooterProps>) {
   // Use onNavigate for footer navigation links
   const handleNavClick = (view: ViewType) => {
     onNavigate(view);
