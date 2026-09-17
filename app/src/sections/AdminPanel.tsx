@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard, Users, FileText, MessageSquare,
@@ -814,11 +814,13 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 function FormField({ label, value, onChange, type = 'text', placeholder = '', multiline = false }: {
     label: string; value: string | number; onChange: (v: string) => void; type?: string; placeholder?: string; multiline?: boolean;
 }) {
+    const id = useId();
     return (
         <div>
-            <label className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">{label}</label>
+            <label htmlFor={id} className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1 block">{label}</label>
             {multiline ? (
                 <textarea
+                    id={id}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
@@ -827,6 +829,7 @@ function FormField({ label, value, onChange, type = 'text', placeholder = '', mu
                 />
             ) : (
                 <input
+                    id={id}
                     type={type}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}

@@ -113,7 +113,7 @@ export function Documentation() {
                                 # Headers mapped perfectly<br />
                                 **Bold text** is easy<br />
                                 ```javascript<br />
-                // Code blocks highlight out of the box!<br />
+                                {'// Code blocks highlight out of the box!'}<br />
                                 function test() {'{'}<br />
                                 &nbsp;&nbsp;return true;<br />
                                 {'}'}<br />

@@ -331,7 +331,7 @@ export function AlgoBot({ onAuthClick }: { onAuthClick: (mode: 'login' | 'signup
                                         transition={{ delay: 0.3 }}
                                         className={`w-full ${isExpanded ? 'max-w-lg' : 'max-w-sm'}`}
                                     >
-                                        <div className={`grid ${isExpanded ? 'grid-cols-2' : 'grid-cols-2'} gap-2.5`}>
+                                        <div className="grid grid-cols-2 gap-2.5">
                                             {QUICK_ACTIONS.map((action, idx) => (
                                                 <motion.button
                                                     key={action.text}

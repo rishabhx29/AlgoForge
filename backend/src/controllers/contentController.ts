@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
-import { getOrSet, invalidate, TTL } from '../utils/cache';
+import { getOrSet, TTL } from '../utils/cache';
+
+/** One consistent server-side log line per failed content endpoint. */
+function logContentError(route: string, error: unknown): void {
+    console.error(`[content] ${route} failed:`, error);
+}
+
 /** Slim fields for *list* endpoints: list views never use full descriptions/test cases. */
 const LIST_PROBLEM_SELECT = {
     id: true,
@@ -71,6 +77,7 @@ export const getHomeContent = async (req: Request, res: Response) => {
         const catalog_ = await catalog();
         res.json(catalog_);
     } catch (error) {
+        logContentError('GET /api/content/home', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -92,6 +99,7 @@ export const getLearningPaths = async (req: Request, res: Response) => {
         const { paths } = await catalog();
         res.json(paths);
     } catch (error) {
+        logContentError('GET /api/content/paths', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -109,8 +117,8 @@ export const getLearningPaths = async (req: Request, res: Response) => {
  * @param res - Express response. Returns a JSON array of topic objects.
  */
 export const getTopicsByPath = async (req: Request, res: Response) => {
+    const { pathId } = req.params;
     try {
-        const { pathId } = req.params;
         const topics = await prisma.topic.findMany({
             where: { path_slug: pathId },
             orderBy: { order_index: 'asc' }
@@ -118,6 +126,7 @@ export const getTopicsByPath = async (req: Request, res: Response) => {
 
         res.json(topics.map(t => ({ ...t, id: t.slug })));
     } catch (error) {
+        logContentError(`GET /api/content/paths/${pathId}/topics`, error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -133,8 +142,8 @@ export const getTopicsByPath = async (req: Request, res: Response) => {
  * @param res - Express response. Returns the topic object or an error message.
  */
 export const getTopicById = async (req: Request, res: Response) => {
+    const { topicId } = req.params;
     try {
-        const { topicId } = req.params;
         const topic = await prisma.topic.findUnique({
             where: { slug: topicId }
         });
@@ -143,6 +152,7 @@ export const getTopicById = async (req: Request, res: Response) => {
         }
         res.json({ ...topic, id: topic.slug });
     } catch (error) {
+        logContentError(`GET /api/content/topics/${topicId}`, error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -163,6 +173,7 @@ export const getAllTopics = async (req: Request, res: Response) => {
         const { topics } = await catalog();
         res.json(topics);
     } catch (error) {
+        logContentError('GET /api/content/topics', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -179,11 +190,12 @@ export const getAllTopics = async (req: Request, res: Response) => {
  * @param res - Express response. Returns a JSON array of problem objects.
  */
 export const getProblemsByTopic = async (req: Request, res: Response) => {
+    const { topicId } = req.params;
     try {
-        const { topicId } = req.params;
         const { problems } = await catalog();
         res.json(problems.filter((p) => p.topic_slug === topicId));
     } catch (error) {
+        logContentError(`GET /api/content/topics/${topicId}/problems`, error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -203,6 +215,7 @@ export const getAllProblems = async (req: Request, res: Response) => {
         const { problems } = await catalog();
         res.json(problems);
     } catch (error) {
+        logContentError('GET /api/content/problems', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -218,8 +231,8 @@ export const getAllProblems = async (req: Request, res: Response) => {
  * @param res - Express response. Returns the problem object or an error message.
  */
 export const getProblemById = async (req: Request, res: Response) => {
+    const { id } = req.params;
     try {
-        const { id } = req.params;
         const problem = await prisma.problem.findUnique({
             where: { id }
         });
@@ -228,6 +241,7 @@ export const getProblemById = async (req: Request, res: Response) => {
         }
         res.json(problem);
     } catch (error) {
+        logContentError(`GET /api/content/problems/${id}`, error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

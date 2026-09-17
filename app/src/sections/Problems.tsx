@@ -75,7 +75,7 @@ export function Problems() {
     allProblems.forEach((p) => {
       if (p.tags) p.tags.forEach((t: string) => tags.add(t));
     });
-    return Array.from(tags).sort();
+    return Array.from(tags).sort((a, b) => a.localeCompare(b));
   }, [allProblems]);
 
   // Filter problems
