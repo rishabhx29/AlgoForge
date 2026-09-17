@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus,
@@ -35,6 +35,8 @@ interface Note {
 }
 
 export function Notes() {
+  const problemSelectId = useId();
+  const noteContentId = useId();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,6 +269,7 @@ export function Notes() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <Input
                 type="text"
+                aria-label="Search notes"
                 placeholder="Search notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -327,12 +330,14 @@ export function Notes() {
                   <div className="flex gap-2">
                     <button
                       onClick={handleCancel}
+                      aria-label="Cancel editing"
                       className="px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
                     <button
                       onClick={handleSave}
+                      aria-label="Save note"
                       className="px-3 py-1.5 rounded-lg bg-[#a088ff]/20 text-[#a088ff] hover:bg-[#a088ff]/30 transition-colors"
                     >
                       <Save className="w-5 h-5" />
@@ -343,8 +348,9 @@ export function Notes() {
                 <div className="space-y-4">
                   {isCreating && (
                     <div>
-                      <label className="text-sm text-white/60 mb-1 block">Select Problem</label>
+                      <label htmlFor={problemSelectId} className="text-sm text-white/60 mb-1 block">Select Problem</label>
                       <Input
+                        id={problemSelectId}
                         type="text"
                         value={problemSearch}
                         onChange={(e) => setProblemSearch(e.target.value)}
@@ -389,8 +395,9 @@ export function Notes() {
                   )}
 
                   <div>
-                    <label className="text-sm text-white/60 mb-1 block">Notes</label>
+                    <label htmlFor={noteContentId} className="text-sm text-white/60 mb-1 block">Notes</label>
                     <textarea
+                      id={noteContentId}
                       value={editForm.content}
                       onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
                       placeholder="Write your notes here... Key insights, approach, time complexity, etc."
@@ -415,12 +422,14 @@ export function Notes() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(selectedNote)}
+                      aria-label={`Edit note for ${selectedNote.problemTitle}`}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                     >
                       <Edit2 className="w-5 h-5 text-white/60" />
                     </button>
                     <button
                       onClick={() => handleDelete(selectedNote)}
+                      aria-label={`Delete note for ${selectedNote.problemTitle}`}
                       className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 transition-colors"
                     >
                       <Trash2 className="w-5 h-5 text-white/60 hover:text-red-400" />
