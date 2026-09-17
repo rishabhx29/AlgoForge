@@ -6,7 +6,6 @@ export const getStats = async (req: Request, res: Response) => {
     try {
         // Cached for 60s: these counters change slowly and are requested by
         // every visitor on the landing page (Hero + Roadmaps stats row).
-        // The four counts also run in parallel now instead of sequentially.
         const stats = await getOrSet('stats:public', TTL.STATS, async () => {
             const [userCount, problemCount, roadmapCount, videoCount] = await Promise.all([
                 prisma.user.count(),

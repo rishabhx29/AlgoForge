@@ -1,18 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { getOrSet, invalidate, TTL } from '../utils/cache';
-
-/**
- * Slim projection for problem *list* endpoints. List views (Problems page,
- * Roadmaps cards, UserHero, Dashboard) only use id/title/difficulty/tags/links
- * — never the full markdown description or the test-case suite. Omitting those
- * two fields cuts the payload of `/api/content/problems` by ~10x, which is the
- * single biggest transfer win for every page that shows a problem list.
- *
- * The full document (description + testCases) is still returned by
- * `getProblemById`, which is what ProblemWorkspace consumes before rendering
- * the editor, so nothing user-visible changes.
- */
+/** Slim fields for *list* endpoints: list views never use full descriptions/test cases. */
 const LIST_PROBLEM_SELECT = {
     id: true,
     title: true,
@@ -32,12 +21,11 @@ function toListProblem(p: {
     return { ...p, topic_id: p.topic_slug };
 }
 
-/**
- * Single-pass loader for the whole content catalog. Replaces the previous
- * N+1 pattern (per-path topic queries + per-path problem counts) with exactly
- * three queries regardless of how many paths/topics exist, and is the backing
- * store for both `/api/content/paths` and the combined `/api/content/home`.
- */
+/** Prisma row types for the catalog queries (inferred, never hand-copied). */
+type PathRow = Awaited<ReturnType<typeof prisma.learningPath.findMany>>[number];
+type TopicRow = Awaited<ReturnType<typeof prisma.topic.findMany>>[number];
+
+/** Load and cache the full content catalog in one pass (three parallel reads). */
 async function loadCatalog() {
     const [paths, topics, problems] = await Promise.all([
         prisma.learningPath.findMany({ orderBy: { order_index: 'asc' } }),
@@ -54,15 +42,15 @@ async function loadCatalog() {
     }
 
     // Map slug back to id for frontend compatibility, add per-path problem count.
-    const pathsWithCounts = paths.map((path: any) => ({
+    const pathsWithCounts = paths.map((path: PathRow) => ({
         ...path,
         id: path.slug,
         totalProblems: topics
-            .filter((t: any) => t.path_slug === path.slug)
-            .reduce((sum: number, t: any) => sum + (problemsByTopic.get(t.slug) || 0), 0),
+            .filter((t: TopicRow) => t.path_slug === path.slug)
+            .reduce((sum: number, t: TopicRow) => sum + (problemsByTopic.get(t.slug) || 0), 0),
     }));
 
-    const topicsWithIds = topics.map((t: any) => ({ ...t, id: t.slug }));
+    const topicsWithIds = topics.map((t: TopicRow) => ({ ...t, id: t.slug }));
     const listProblems = problems.map(toListProblem);
 
     return { paths: pathsWithCounts, topics: topicsWithIds, problems: listProblems };
@@ -77,12 +65,6 @@ function catalog() {
  * @desc    Get the full content catalog in one request (paths + topics + problems)
  * @route   GET /api/content/home
  * @access  Public
- *
- * The landing page previously fetched paths, then topics per path, then
- * problems per topic — dozens of sequential HTTP requests that each waited on
- * a possibly cold-starting backend. This endpoint returns everything the home
- * page needs in a single cached response; the client groups problems by topic
- * locally (they carry `topic_id`), so the rendered result is identical.
  */
 export const getHomeContent = async (req: Request, res: Response) => {
     try {
@@ -200,7 +182,7 @@ export const getProblemsByTopic = async (req: Request, res: Response) => {
     try {
         const { topicId } = req.params;
         const { problems } = await catalog();
-        res.json(problems.filter((p: any) => p.topic_slug === topicId));
+        res.json(problems.filter((p) => p.topic_slug === topicId));
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

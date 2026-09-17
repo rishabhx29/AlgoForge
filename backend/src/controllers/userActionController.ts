@@ -2,11 +2,32 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { SOLVE_XP } from '../config/xpConfig';
 
-export const updateProblemStatus = async (req: Request | any, res: Response) => {
+/**
+ * Progress status values shared by the progress endpoints.
+ * Only these values are valid; anything else is rejected with 400.
+ */
+const PROGRESS_STATUSES = ['TODO', 'SOLVED', 'ATTEMPTED'] as const;
+export type ProgressStatus = (typeof PROGRESS_STATUSES)[number];
+function isProgressStatus(value: unknown): value is ProgressStatus {
+    return typeof value === 'string' && (PROGRESS_STATUSES as readonly string[]).includes(value);
+}
+
+/** Total XP earned by user `user`, floored at 0. */
+function xpAfter(previousXp: number, delta: number): number {
+    return Math.max(0, previousXp + delta);
+}
+
+export const updateProblemStatus = async (req: Request, res: Response) => {
     try {
         const { problemId } = req.params;
-        const { status } = req.body;
+        const { status: rawStatus } = req.body;
         const userId = req.user.id;
+
+        if (!isProgressStatus(rawStatus)) {
+            res.status(400).json({ message: 'Invalid status. Expected one of TODO, SOLVED, ATTEMPTED.' });
+            return;
+        }
+        const status = rawStatus;
 
         let progress = await prisma.userProgress.findUnique({
             where: { user_id_problem_id: { user_id: userId, problem_id: problemId } }
@@ -34,17 +55,9 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
         if (status === 'SOLVED' && previousStatus !== 'SOLVED') {
             const userDoc = await prisma.user.findUnique({ where: { id: userId } });
             if (userDoc) {
-                // ─────────────────────────────────────────────
-                // UTC-based streak logic
-                // ─────────────────────────────────────────────
-                // All date comparisons use UTC via toISOString().split('T')[0].
-                // Streak rules (all dates are UTC calendar dates):
-                //   1. If last_active is today (UTC) → streak unchanged
-                //   2. If last_active is yesterday (UTC) → streak increments by 1
-                //   3. If last_active is 2+ days ago (UTC) → streak resets to 1
-                //   4. If no last_active (new user) → streak starts at 1
-                // Streak resets at midnight UTC regardless of user's local timezone.
-                // ─────────────────────────────────────────────
+                // UTC-based streak logic. Dates are UTC calendar dates: unchanged today,
+                // +1 from yesterday, reset to 1 after 2+ days or for new users.
+                // Streak resets at midnight UTC regardless of the user's timezone.
                 const today = new Date();
                 const todayStr = today.toISOString().split('T')[0];
                 const lastActiveStr = userDoc.last_active ? new Date(userDoc.last_active).toISOString().split('T')[0] : null;
@@ -91,7 +104,9 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
                 await prisma.user.update({
                     where: { id: userId },
                     data: {
-                        xp_points: { decrement: SOLVE_XP },
+                        // Absolute value rather than `decrement`, so XP can never go
+                        // negative if it was already below one problem's reward.
+                        xp_points: xpAfter(userDoc.xp_points ?? 0, -SOLVE_XP),
                         solvedProblems: updatedSolvedProblems
                     }
                 });
@@ -105,7 +120,7 @@ export const updateProblemStatus = async (req: Request | any, res: Response) => 
     }
 };
 
-export const toggleBookmark = async (req: Request | any, res: Response) => {
+export const toggleBookmark = async (req: Request, res: Response) => {
     try {
         const { problemId } = req.params;
         const userId = req.user.id;
@@ -157,7 +172,7 @@ export const toggleBookmark = async (req: Request | any, res: Response) => {
     }
 };
 
-export const updateNotes = async (req: Request | any, res: Response) => {
+export const updateNotes = async (req: Request, res: Response) => {
     try {
         const { problemId } = req.params;
         const { notes } = req.body;
@@ -190,7 +205,7 @@ export const updateNotes = async (req: Request | any, res: Response) => {
     }
 };
 
-export const getUserProgress = async (req: Request | any, res: Response) => {
+export const getUserProgress = async (req: Request, res: Response) => {
     try {
         const userId = req.user.id;
         const progress = await prisma.userProgress.findMany({ where: { user_id: userId } });
