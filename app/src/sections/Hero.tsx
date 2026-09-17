@@ -1,7 +1,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Users, Star, Sparkles, Terminal, Cpu } from 'lucide-react';
+import { ArrowRight, Users, Star, Terminal, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStats } from '@/hooks/useStats';
 
@@ -179,17 +179,6 @@ export function Hero({ onGetStarted }: HeroProps) {
 
           {/* Text Content */}
           <div className="flex-1 text-center lg:text-left">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm"
-            >
-              <Sparkles className="w-4 h-4 text-[#a088ff]" />
-              <span className="text-sm text-white/80">Trusted by {userCount} learners worldwide</span>
-            </motion.div>
-
             {/* Heading */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
