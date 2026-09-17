@@ -1,8 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Analytics } from '@vercel/analytics/react';
+import { prefetchAppData } from '@/hooks/useContent';
 import { Navigation } from '@/components/custom/Navigation';
 import { Hero } from '@/sections/Hero';
 import { UserHero } from '@/sections/UserHero';
@@ -41,6 +42,7 @@ type View = 'home' | 'dashboard' | 'topic' | 'path' | 'problems' | 'notes' | 'le
 
 function AppContent() {
   const { user, isAuthReady } = useAuth();
+  const queryClient = useQueryClient();
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
@@ -48,6 +50,14 @@ function AppContent() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
+  // Warm the shared content catalog + public stats in the background on first
+  // mount, in parallel with the auth session check. By the time the user
+  // scrolls to Roadmaps or opens Problems/Leaderboard, data is already in the
+  // cache and those views render instantly instead of showing skeletons.
+  useEffect(() => {
+    prefetchAppData(queryClient);
+  }, [queryClient]);
 
   /**
    * Resolve a public profile pid â†’ internal user id (no-op for legacy ids).

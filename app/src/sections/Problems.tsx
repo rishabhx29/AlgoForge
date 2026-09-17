@@ -15,9 +15,9 @@ import {
   ChevronDown,
   Code2
 } from 'lucide-react';
-import { getAllProblems, getAllTopics } from '@/api/content';
 import { updateProblemStatus, toggleBookmark as apiToggleBookmark, getUserProgress, updateNotes } from '@/api/userActions';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHomeContent } from '@/hooks/useContent';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { SOLVE_XP } from '@/utils/xpConfig';
@@ -27,15 +27,10 @@ import type { Problem, Topic, UserProgressItem } from '@/lib/types';
 
 export function Problems() {
   const queryClient = useQueryClient();
-  const { data: problemsData = [], isLoading: problemsLoading } = useQuery<Problem[]>({
-    queryKey: ['problems'],
-    queryFn: getAllProblems
-  });
-
-  const { data: topicsData = [], isLoading: topicsLoading } = useQuery<Topic[]>({
-    queryKey: ['topics'],
-    queryFn: getAllTopics
-  });
+  // Shared catalog cache — already warm if the user came from the home page.
+  const { data: catalog, isLoading: filtersLoading } = useHomeContent();
+  const problemsData = (catalog?.problems ?? []) as Problem[];
+  const topicsData = (catalog?.topics ?? []) as Topic[];
 
   const { user, refreshProfile } = useAuth();
 
@@ -47,7 +42,6 @@ export function Problems() {
 
   const allProblems = problemsData;
   const topics = topicsData;
-  const filtersLoading = problemsLoading || topicsLoading;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'Easy' | 'Medium' | 'Hard'>('all');

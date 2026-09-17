@@ -15,6 +15,10 @@
     <!-- Preconnect to domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Warm the full connection (DNS + TCP + TLS) to the API before any JS
+         runs, so the landing-page stats fetch doesn't pay a cold handshake.
+         crossorigin matches fetch()'s CORS mode so the socket is reused. -->
+    <link rel="preconnect" href="https://algoforge-2-0.onrender.com" crossorigin>
     <link rel="dns-prefetch" href="https://algoforge-2-0.onrender.com">
 
     <!-- Load Google Fonts asynchronously via link tags instead of blocking CSS @import -->
