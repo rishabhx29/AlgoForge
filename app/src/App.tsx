@@ -11,7 +11,7 @@ import { Roadmaps } from '@/sections/Roadmaps';
 import { Features } from '@/sections/Features';
 import { HowItWorks } from '@/sections/HowItWorks';
 import { CommunityHub } from '@/sections/CommunityHub';
-import { CTA } from '@/sections/CTA';
+import { CallToAction } from '@/sections/CTA';
 import { Footer } from '@/sections/Footer';
 import { AuthModal } from '@/components/custom/AuthModal';
 import { AlgoBot } from '@/components/custom/AlgoBot';
@@ -23,6 +23,7 @@ import { resolveProfileKey } from '@/api/userActions';
 import { PageSkeleton } from '@/components/custom/PageSkeleton';
 import { ErrorBoundary } from '@/components/custom/ErrorBoundary';
 import { ProfileView } from '@/sections/ProfileView';
+import { resolveHashRoute, type View } from '@/lib/hashRouting';
 
 // Lazy loaded views
 const PathDetail = lazy(() => import('@/sections/PathDetail').then(m => ({ default: m.PathDetail })));
@@ -38,7 +39,7 @@ const Documentation = lazy(() => import('@/sections/Documentation').then(m => ({
 const ApiReference = lazy(() => import('@/sections/ApiReference').then(m => ({ default: m.ApiReference })));
 const ProblemWorkspace = lazy(() => import('@/sections/ProblemWorkspace').then(m => ({ default: m.ProblemWorkspace })));
 
-type View = 'home' | 'dashboard' | 'topic' | 'path' | 'problems' | 'notes' | 'leaderboard' | 'community' | 'daily-challenges' | 'admin' | 'docs' | 'api' | 'workspace' | 'profile';
+export type { View } from '@/lib/hashRouting';
 
 function AppContent() {
   const { user, isAuthReady } = useAuth();
@@ -76,70 +77,17 @@ function AppContent() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
+      const route = resolveHashRoute(hash, { user, isAuthReady });
 
-      if (hash) {
-        if (hash.startsWith('path/')) {
-          const pId = hash.replace('path/', '');
-          setSelectedPathId(pId);
-          setCurrentView('path');
-        } else if (hash.startsWith('topic/')) {
-          const topicId = hash.replace('topic/', '');
-          setSelectedTopicId(topicId);
-          setCurrentView('topic');
-        } else if (hash.startsWith('workspace/')) {
-          const wId = hash.replace('workspace/', '');
-          setSelectedWorkspaceId(wId);
-          setCurrentView('workspace');
-        } else if (hash.startsWith('profile/')) {
-          const profileKey = hash.replace('profile/', '');
-          setSelectedProfileUserId(profileKey);
-          if (profileKey.startsWith('u_')) resolveProfilePid(profileKey);
-          setCurrentView('profile');
-        } else if (hash === 'dashboard') {
-          if (user || !isAuthReady) {
-            setCurrentView('dashboard');
-          } else {
-            window.location.hash = '';
-            setCurrentView('home');
-          }
-        } else if (hash === 'problems') {
-          setCurrentView('problems');
-        } else if (hash === 'notes') {
-          if (user || !isAuthReady) {
-            setCurrentView('notes');
-          } else {
-            window.location.hash = '';
-            setCurrentView('home');
-          }
-        } else if (hash === 'leaderboard') {
-          setCurrentView('leaderboard');
-        } else if (hash === 'community') {
-          setCurrentView('community');
-        } else if (hash === 'daily-challenges') {
-          if (user || !isAuthReady) {
-            setCurrentView('daily-challenges');
-          } else {
-            window.location.hash = '';
-            setCurrentView('home');
-          }
-        } else if (hash === 'admin') {
-          if ((user && user.role === 'admin') || !isAuthReady) {
-            setCurrentView('admin');
-          } else {
-            window.location.hash = '';
-            setCurrentView('home');
-          }
-        } else if (hash === 'docs') {
-          setCurrentView('docs');
-        } else if (hash === 'api') {
-          setCurrentView('api');
-        } else {
-          setCurrentView('home');
-        }
-      } else {
-        setCurrentView('home');
-        setSelectedTopicId(null);
+      setCurrentView(route.view);
+      if (route.selectedTopicId !== undefined) setSelectedTopicId(route.selectedTopicId);
+      if (route.selectedPathId !== undefined) setSelectedPathId(route.selectedPathId);
+      if (route.selectedWorkspaceId !== undefined) setSelectedWorkspaceId(route.selectedWorkspaceId);
+      if (route.selectedProfileUserId !== undefined) {
+        setSelectedProfileUserId(route.selectedProfileUserId);
+        if (route.selectedProfileUserId.startsWith('u_')) resolveProfilePid(route.selectedProfileUserId);
       }
+      if (route.clearHash) window.location.hash = '';
     };
 
     handleHashChange();
@@ -284,7 +232,7 @@ function AppContent() {
             <Features />
             <HowItWorks onGetStarted={() => handleAuthClick('signup')} />
             <CommunityHub onNavigate={handleNavigate} />
-            <CTA onGetStarted={() => handleAuthClick('signup')} />
+            <CallToAction onGetStarted={() => handleAuthClick('signup')} />
           </>
         );
     }
