@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Binary,
@@ -10,10 +10,11 @@ import {
   ArrowRight,
   PlayCircle
 } from 'lucide-react';
-import { getLearningPaths, getTopicsByPath, getProblemsByTopic } from '@/api/content';
+import { useQuery } from '@tanstack/react-query';
 import { getUserProgress } from '@/api/userActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStats } from '@/hooks/useStats';
+import { useHomeContent } from '@/hooks/useContent';
 
 interface RoadmapsProps {
   onPathClick: (pathId: string) => void;
@@ -33,62 +34,53 @@ export function Roadmaps({ onPathClick }: RoadmapsProps) {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { problemCount, videoCount, roadmapCount, userCount } = useStats();
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [topicsMap, setTopicsMap] = useState<Record<string, any[]>>({});
-  const [pathSolvedCounts, setPathSolvedCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  // ONE cached request for paths + topics + problems (was: 1 + paths +
+  // Σ topics requests on every mount — dozens of round-trips against a
+  // possibly cold-starting backend). Grouping happens locally.
+  const { data: catalog, isLoading: catalogLoading } = useHomeContent();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const paths = await getLearningPaths();
-        setCategories(paths);
+  // User progress is user-specific, so it lives in its own query. It no longer
+  // re-triggers the whole catalog fetch when auth resolves (the previous
+  // effect re-ran on `user` and refetched everything).
+  const { data: progressData } = useQuery({
+    queryKey: ['userProgress', user?.id],
+    queryFn: getUserProgress,
+    enabled: !!user,
+    staleTime: 60 * 1000,
+  });
 
-        const topicsData: Record<string, any[]> = {};
-        // Also collect all problem _ids per path for progress matching
-        const pathProblemIds: Record<string, string[]> = {};
+  const categories = catalog?.paths ?? [];
+  const topicsMap = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const topic of catalog?.topics ?? []) {
+      (map[topic.path_slug] ||= []).push(topic);
+    }
+    return map;
+  }, [catalog]);
 
-        await Promise.all(paths.map(async (path: any) => {
-          const pathTopics = await getTopicsByPath(path.id);
-          topicsData[path.id] = pathTopics;
+  const pathSolvedCounts = useMemo(() => {
+    if (!user || !progressData || !catalog) return {};
+    const solvedSet = new Set(
+      progressData
+        .filter((p: any) => p.status === 'SOLVED')
+        .map((p: any) => p.problem_id)
+    );
+    // Map each topic slug to its parent path once, then bucket solved problems.
+    const topicToPath = new Map<string, string>();
+    for (const topic of catalog.topics) {
+      topicToPath.set(topic.id, topic.path_slug);
+    }
+    const counts: Record<string, number> = {};
+    for (const path of catalog.paths) counts[path.id] = 0;
+    for (const problem of catalog.problems) {
+      if (!solvedSet.has(problem.id)) continue;
+      const pathId = topicToPath.get(problem.topic_id);
+      if (pathId && pathId in counts) counts[pathId]++;
+    }
+    return counts;
+  }, [user, progressData, catalog]);
 
-          // Fetch problems for each topic to get their _ids
-          const problemIds: string[] = [];
-          await Promise.all(pathTopics.map(async (topic: any) => {
-            try {
-              const problems = await getProblemsByTopic(topic.id);
-              problems.forEach((p: any) => problemIds.push(p.id));
-            } catch { /* ignore */ }
-          }));
-          pathProblemIds[path.id] = problemIds;
-        }));
-        setTopicsMap(topicsData);
-
-        // Fetch user progress and compute solved counts per path
-        if (user) {
-          try {
-            const progressData = await getUserProgress();
-            const solvedSet = new Set<string>(
-              progressData
-                .filter((p: any) => p.status === 'SOLVED')
-                .map((p: any) => p.problem_id)
-            );
-
-            const counts: Record<string, number> = {};
-            for (const [pathId, pIds] of Object.entries(pathProblemIds)) {
-              counts[pathId] = pIds.filter(id => solvedSet.has(id)).length;
-            }
-            setPathSolvedCounts(counts);
-          } catch { /* user not logged in or error */ }
-        }
-      } catch (e) {
-        console.error("Failed to load roadmaps", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user]);
+  const loading = catalogLoading;
 
   const containerVariants = {
     hidden: { opacity: 0 },

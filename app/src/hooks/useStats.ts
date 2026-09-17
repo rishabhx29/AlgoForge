@@ -1,44 +1,25 @@
-import { useState, useEffect } from 'react';
-import { apiClient } from '@/api/apiClient';
+import { usePublicStats } from '@/hooks/useContent';
 
+/**
+ * Landing-page counters (Learners / Problems / Videos / Paths), formatted for
+ * display. Backed by the shared react-query cache — Hero and Roadmaps both
+ * call this hook but only ONE network request is made per 60s window.
+ */
 export function useStats() {
-    const [userCount, setUserCount] = useState<string>('0');
-    const [problemCount, setProblemCount] = useState<string>('0');
-    const [videoCount, setVideoCount] = useState<string>('0');
-    const [roadmapCount, setRoadmapCount] = useState<string>('0');
-    const [loading, setLoading] = useState(true);
+    const { data, isLoading } = usePublicStats();
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await apiClient.get(`/api/info/stats`);
-                const data = res.data;
-
-                // Format numbers (e.g. 1.2k)
-                const formatCount = (count: number) => {
-                    if (count >= 1000) return `${(count / 1000).toFixed(1)}K+`;
-                    return `${count}`;
-                };
-
-                setUserCount(formatCount(data.userCount));
-                setProblemCount(formatCount(data.problemCount));
-                setVideoCount(formatCount(data.videoCount));
-                setRoadmapCount(`${data.roadmapCount}`);
-            } catch (error) {
-                console.error('Error fetching stats:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, []);
+    // Format numbers (e.g. 1.2k)
+    const formatCount = (count: number | undefined) => {
+        if (count === undefined) return '0';
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}K+`;
+        return `${count}`;
+    };
 
     return {
-        userCount,
-        problemCount,
-        videoCount,
-        roadmapCount,
-        loading
+        userCount: formatCount(data?.userCount),
+        problemCount: formatCount(data?.problemCount),
+        videoCount: formatCount(data?.videoCount),
+        roadmapCount: data?.roadmapCount !== undefined ? `${data.roadmapCount}` : '0',
+        loading: isLoading
     };
 }

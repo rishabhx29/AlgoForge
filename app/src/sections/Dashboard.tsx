@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllProblems, getAllTopics } from '@/api/content';
+import { useHomeContent } from '@/hooks/useContent';
 import { getUserProgress, getDashboardStats } from '@/api/userActions';
 import { SOLVE_XP, XP_PER_LEVEL, calculateLevel } from '@/utils/xpConfig';
 
@@ -144,15 +144,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     };
   }, []);
 
-  const { data: problemsData = [], isLoading: problemsLoading } = useQuery({
-    queryKey: ['problems'],
-    queryFn: getAllProblems
-  });
-
-  const { data: topicsData = [], isLoading: topicsLoading } = useQuery({
-    queryKey: ['topics'],
-    queryFn: getAllTopics
-  });
+  // Shared catalog cache — problems + topics arrive in one request (and are
+  // usually already warm from the home page).
+  const { data: catalog, isLoading: catalogLoading } = useHomeContent();
+  const problems = useMemo(() => (catalog?.problems ?? []) as ProblemItem[], [catalog]);
+  const topics = useMemo(() => (catalog?.topics ?? []) as TopicItem[], [catalog]);
 
   const { data: userProgressData = [], isLoading: progressLoading } = useQuery({
     queryKey: ['userProgress', profile?.id],
@@ -166,11 +162,9 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     enabled: !!profile,
   });
 
-  const problems = problemsData;
-  const topics = topicsData;
   const userProgress = userProgressData;
   const dashboardStats = dashboardStatsData;
-  const loading = problemsLoading || topicsLoading || progressLoading || statsLoading;
+  const loading = catalogLoading || progressLoading || statsLoading;
 
   const stats = useMemo(() => {
     const solvedProgress = userProgress.filter((p: UserProgressItem) => p.status === 'SOLVED');

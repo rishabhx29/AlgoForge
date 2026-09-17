@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { invalidate } from '../utils/cache';
+
+/** Bust cached content catalog + public stats after any content mutation. */
+function bustContentCache() {
+    invalidate('content:');
+    invalidate('stats:');
+}
 
 // ========== DASHBOARD STATS ==========
 
@@ -191,6 +198,7 @@ export const addProblem = async (req: Request, res: Response) => {
             }
         });
 
+        bustContentCache();
         res.status(201).json({ ...problem, _id: problem.id });
     } catch (error) {
         console.error('Add problem error:', error);
@@ -216,6 +224,7 @@ export const editProblem = async (req: Request, res: Response) => {
             data: updates
         });
 
+        bustContentCache();
         res.json({ ...problem, _id: problem.id });
     } catch (error) {
         console.error('Edit problem error:', error);
@@ -233,6 +242,7 @@ export const deleteProblem = async (req: Request, res: Response) => {
         await prisma.userProgress.deleteMany({ where: { problem_id: req.params.id } });
         await prisma.problem.delete({ where: { id: req.params.id } });
 
+        bustContentCache();
         res.json({ message: 'Problem deleted successfully' });
     } catch (error) {
         console.error('Delete problem error:', error);

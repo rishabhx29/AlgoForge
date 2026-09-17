@@ -1,25 +1,28 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
+import { getOrSet, TTL } from '../utils/cache';
 
 export const getStats = async (req: Request, res: Response) => {
     try {
-        const userCount = await prisma.user.count();
-        const problemCount = await prisma.problem.count();
-        const roadmapCount = await prisma.learningPath.count();
-
-        // Count problems with video links (where video_link is neither null nor empty string)
-        const videoCount = await prisma.problem.count({
-            where: {
-                video_link: { not: null, notIn: [""] }
-            }
+        // Cached for 60s: these counters change slowly and are requested by
+        // every visitor on the landing page (Hero + Roadmaps stats row).
+        // The four counts also run in parallel now instead of sequentially.
+        const stats = await getOrSet('stats:public', TTL.STATS, async () => {
+            const [userCount, problemCount, roadmapCount, videoCount] = await Promise.all([
+                prisma.user.count(),
+                prisma.problem.count(),
+                prisma.learningPath.count(),
+                // Count problems with video links (neither null nor empty string)
+                prisma.problem.count({
+                    where: {
+                        video_link: { not: null, notIn: [""] }
+                    }
+                }),
+            ]);
+            return { userCount, problemCount, roadmapCount, videoCount };
         });
 
-        res.status(200).json({
-            userCount,
-            problemCount,
-            roadmapCount,
-            videoCount
-        });
+        res.status(200).json(stats);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

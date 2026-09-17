@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Flame, Zap, CheckCircle2, Trophy, Activity, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getDashboardStats, getUserProgress } from '@/api/userActions';
-import { getAllProblems, getAllTopics } from '@/api/content';
+import { useHomeContent } from '@/hooks/useContent';
 
 interface UserHeroProps {
     user: any;
@@ -11,35 +12,25 @@ interface UserHeroProps {
 }
 
 export function UserHero({ user, onTopicClick }: UserHeroProps) {
-    const [dashboardStats, setDashboardStats] = useState<any>(null);
-    const [problems, setProblems] = useState<any[]>([]);
-    const [topics, setTopics] = useState<any[]>([]);
-    const [userProgress, setUserProgress] = useState<any[]>([]);
+    // All content comes from the shared home-content cache (already warm from
+    // the Roadmaps section / app prefetch — usually zero network activity here).
+    const { data: catalog } = useHomeContent();
+    const problems = useMemo(() => catalog?.problems ?? [], [catalog]);
+    const topics = useMemo(() => catalog?.topics ?? [], [catalog]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [statsData, problemsData, topicsData] = await Promise.all([
-                    getDashboardStats().catch(() => null),
-                    getAllProblems().catch(() => []),
-                    getAllTopics().catch(() => [])
-                ]);
-                setDashboardStats(statsData);
-                setProblems(problemsData);
-                setTopics(topicsData);
+    const { data: dashboardStats } = useQuery({
+        queryKey: ['dashboardStats', user?.id],
+        queryFn: getDashboardStats,
+        enabled: !!user,
+        staleTime: 60 * 1000,
+    });
 
-                try {
-                    const progress = await getUserProgress();
-                    setUserProgress(progress);
-                } catch {
-                    // Not logged in or error
-                }
-            } catch (e) {
-                console.error("Failed to load hero data", e);
-            }
-        };
-        fetchData();
-    }, []);
+    const { data: userProgress = [] } = useQuery({
+        queryKey: ['userProgress', user?.id],
+        queryFn: getUserProgress,
+        enabled: !!user,
+        staleTime: 60 * 1000,
+    });
 
     // Compute solved stats
     const solvedIds = useMemo(() => {

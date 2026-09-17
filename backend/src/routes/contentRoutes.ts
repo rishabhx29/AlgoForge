@@ -7,6 +7,7 @@ import {
     getAllProblems,
     getProblemById,
     getAllTopics,
+    getHomeContent,
     executeCode
 } from '../controllers/contentController';
 import { protect } from '../middleware/authMiddleware';
@@ -16,6 +17,7 @@ const router = express.Router();
 
 router.get('/paths', getLearningPaths);
 router.get('/paths/:pathId/topics', getTopicsByPath);
+router.get('/home', getHomeContent);
 router.get('/topics', getAllTopics);
 router.get('/topics/:topicId', getTopicById);
 router.get('/topics/:topicId/problems', getProblemsByTopic);

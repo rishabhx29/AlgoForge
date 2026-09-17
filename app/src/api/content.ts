@@ -1,6 +1,24 @@
 import { apiClient } from './apiClient';
 
 /**
+ * Fetches everything the home page needs in ONE request: learning paths,
+ * topics, and problems (slim fields). Backed by a 5-minute server cache.
+ *
+ * Replaces the old waterfall (paths → topics-per-path → problems-per-topic)
+ * that cost dozens of round-trips on every visit.
+ */
+export interface HomeContent {
+    paths: any[];
+    topics: any[];
+    problems: any[];
+}
+
+export const getHomeContent = async (): Promise<HomeContent> => {
+    const response = await apiClient.get(`/api/content/home`);
+    return response.data;
+};
+
+/**
  * Fetches all available learning paths from the backend.
  *
  * @returns A promise resolving to an array of learning path objects.

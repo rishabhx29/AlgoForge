@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -10,10 +11,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { apiClient } from '@/api/apiClient';
 import { getMyRank } from '@/api/userActions';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 interface LeaderboardProps {
   onProfileClick?: (userId: string) => void;
@@ -33,53 +32,30 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
   const { profile } = useAuth();
   const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
   const [category, setCategory] = useState<'xp' | 'streak' | 'solved'>('xp');
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [myRank, setMyRank] = useState<number | null>(null);
 
-  const loadLeaderboard = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/users/leaderboard?sortBy=${category}&limit=10`);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch leaderboard (${res.status})`);
-      }
-      const data = await res.json();
-      setLeaderboardData(data);
-    } catch (error) {
-      console.error('Failed to fetch leaderboard', error);
-      toast.error('Failed to load the leaderboard. Please try again.');
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [category]);
-
-  useEffect(() => {
-    loadLeaderboard();
-  }, [loadLeaderboard]);
+  // Cached (30s stale) + placeholderData: switching XP/Streak/Solved tabs
+  // keeps the previous table on screen while the new one loads, instead of
+  // flashing a full-screen "Loading Leaderboard..." spinner.
+  const { data: leaderboardData = [], isLoading: loading, isError: loadError, refetch } = useQuery<LeaderboardEntry[]>({
+    queryKey: ['leaderboard', category],
+    queryFn: async () => {
+      const res = await apiClient.get(`/api/users/leaderboard?sortBy=${category}&limit=10`);
+      return res.data;
+    },
+    staleTime: 30 * 1000,
+    placeholderData: (previous) => previous,
+  });
 
   // Fetch the logged-in user's own rank from the backend
-  useEffect(() => {
-    if (!profile) {
-      setMyRank(null);
-      return;
-    }
+  const { data: myRankData } = useQuery({
+    queryKey: ['myRank', profile?.id],
+    queryFn: getMyRank,
+    enabled: !!profile,
+    staleTime: 30 * 1000,
+  });
+  const myRank = profile ? (myRankData?.rank ?? null) : null;
 
-    const fetchMyRank = async () => {
-      try {
-        const data = await getMyRank();
-        setMyRank(data.rank);
-      } catch (error) {
-        // Silent per spec: the "You" card simply stays hidden on failure
-        console.error('Failed to fetch your rank', error);
-      }
-    };
-
-    fetchMyRank();
-  }, [profile]);
+  const loadLeaderboard = () => void refetch();
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-6 h-6 text-[#ffd700]" />;
@@ -88,7 +64,7 @@ export function Leaderboard({ onProfileClick }: LeaderboardProps) {
     return <span className="w-6 h-6 flex items-center justify-center text-white/60 font-medium">{rank}</span>;
   };
 
-  if (loading) {
+  if (loading && leaderboardData.length === 0) {
     return (
       <section className="relative min-h-screen pt-24 pb-12 overflow-hidden flex items-center justify-center">
         <div className="text-white">Loading Leaderboard...</div>
