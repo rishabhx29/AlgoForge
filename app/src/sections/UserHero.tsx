@@ -5,6 +5,7 @@ import { Flame, Zap, CheckCircle2, Trophy, Activity, PlayCircle } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { getDashboardStats, getUserProgress } from '@/api/userActions';
 import { useHomeContent } from '@/hooks/useContent';
+import { buildProgressSets } from '@/lib/types';
 
 interface UserHeroProps {
     user: any;
@@ -32,11 +33,8 @@ export function UserHero({ user, onTopicClick }: UserHeroProps) {
         staleTime: 60 * 1000,
     });
 
-    // Compute solved stats
-    const solvedIds = useMemo(() => {
-        const solved = userProgress.filter((p: any) => p.status === 'SOLVED');
-        return new Set(solved.map((p: any) => p.problem_id));
-    }, [userProgress]);
+    // Compute solved stats via the shared progress helper (single source of truth).
+    const solvedIds = useMemo(() => buildProgressSets(userProgress).completed, [userProgress]);
 
     const totalSolved = solvedIds.size;
 

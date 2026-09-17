@@ -16,6 +16,7 @@ import { updateProblemStatus, getUserProgress } from '@/api/userActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SOLVE_XP } from '@/utils/xpConfig';
+import { buildProgressSets } from '@/lib/types';
 
 interface DailyChallengesProps {
     onBack: () => void;
@@ -30,10 +31,6 @@ interface DailyProblem {
     tags?: string[];
 }
 
-interface DailyProgressItem {
-    status: string;
-    problem_id: string;
-}
 /**
  * Generates a deterministic FNV-1a hash from a string.
  * Used to create a stable daily ordering of problems
@@ -68,11 +65,7 @@ export function DailyChallenges({ onBack }: DailyChallengesProps) {
 
                 try {
                     const progressData = await getUserProgress();
-                    const completed = new Set<string>();
-                    progressData.forEach((p: DailyProgressItem) => {
-                        if (p.status === 'SOLVED') completed.add(p.problem_id);
-                    });
-                    setCompletedProblems(completed);
+                    setCompletedProblems(buildProgressSets(progressData).completed);
                 } catch {
                     // Not logged in
                 }

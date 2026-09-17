@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { createPostSchema, TITLE_MAX, CONTENT_MAX } from '@/lib/validators';
+import { timeAgo } from '@/lib/time';
 import {
     getPosts,
     getPost,
@@ -61,19 +62,6 @@ const sortOptions = [
     { id: 'most-liked', label: 'Most Liked', icon: TrendingUp },
     { id: 'most-discussed', label: 'Most Discussed', icon: Flame }
 ];
-
-function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    return `${months}mo ago`;
-}
 
 function getCategoryColor(cat: string): string {
     const found = categories.find(c => c.id === cat);
