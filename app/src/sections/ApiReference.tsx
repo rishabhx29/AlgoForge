@@ -1,6 +1,12 @@
 import { motion } from 'framer-motion';
 import { Server, Database, Code, Key } from 'lucide-react';
 
+const methodColors: Record<string, string> = {
+    GET: 'text-emerald-400 bg-emerald-400/10',
+    POST: 'text-blue-400 bg-blue-400/10',
+    PUT: 'text-amber-400 bg-amber-400/10',
+};
+
 const apiEndpoints = [
     {
         category: 'Authentication',
@@ -107,15 +113,11 @@ export function ApiReference() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {section.endpoints.map((ep, i) => {
-                                            const methodColor =
-                                                ep.method === 'GET' ? 'text-emerald-400 bg-emerald-400/10' :
-                                                    ep.method === 'POST' ? 'text-blue-400 bg-blue-400/10' :
-                                                        ep.method === 'PUT' ? 'text-amber-400 bg-amber-400/10' :
-                                                            'text-rose-400 bg-rose-400/10';
+                                        {section.endpoints.map((ep) => {
+                                            const methodColor = methodColors[ep.method] ?? 'text-rose-400 bg-rose-400/10';
 
                                             return (
-                                                <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                                                <tr key={`${ep.method}:${ep.path}`} className="hover:bg-white/[0.02] transition-colors">
                                                     <td className="p-4">
                                                         <span className={`text-[10px] font-bold px-2 py-1 rounded-md tracking-wider ${methodColor}`}>
                                                             {ep.method}

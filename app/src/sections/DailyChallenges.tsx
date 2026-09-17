@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { isAxiosError } from 'axios';
 import { motion } from 'framer-motion';
 import {
     Target,
@@ -66,8 +67,12 @@ export function DailyChallenges({ onBack }: DailyChallengesProps) {
                 try {
                     const progressData = await getUserProgress();
                     setCompletedProblems(buildProgressSets(progressData).completed);
-                } catch {
-                    // Not logged in
+                } catch (error) {
+                    // Guests can still browse challenges, but other failures need feedback.
+                    if (!isAxiosError(error) || error.response?.status !== 401) {
+                        console.error('Failed to load challenge progress', error);
+                        toast.error('Failed to load your challenge progress');
+                    }
                 }
             } catch (e) {
                 console.error(e);
