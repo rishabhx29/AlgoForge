@@ -122,7 +122,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       setProfile({ ...data, id: data.id });
 
       return { error: null };
-    } catch (_err) {
+    } catch (error) {
+      console.error('Sign-in failed', error);
       return { error: 'Network error. Ensure backend is running.' };
     }
   };
@@ -159,7 +160,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       setProfile({ ...data, id: data.id });
 
       return { error: null };
-    } catch (_err) {
+    } catch (error) {
+      console.error('Sign-up failed', error);
       return { error: 'Network error. Ensure backend is running.' };
     }
   };
@@ -198,7 +200,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       setProfile({ ...data, id: data.id });
 
       return { error: null, isNewUser: data.isNewUser };
-    } catch (_err) {
+    } catch (error) {
+      console.error('Google sign-in failed', error);
       return { error: 'Network error during Google Auth' };
     }
   };
@@ -258,7 +261,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       }
 
       return { error: null };
-    } catch (_err) {
+    } catch (error) {
+      console.error('Profile update failed', error);
       return { error: 'Network error. Ensure backend is running.' };
     }
   };

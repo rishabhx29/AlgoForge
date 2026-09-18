@@ -432,16 +432,13 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
             { label: 'Problems Solved', value: animSolved, sub: `of ${stats.totalProblems}`, icon: CheckCircle2, color: '#a088ff', glow: 'rgba(160,136,255,0.15)' },
             { label: 'XP Points', value: animXP, sub: `Level ${level}`, icon: Zap, color: '#ffd700', glow: 'rgba(255,215,0,0.12)', tooltip: `Earn ${SOLVE_XP} XP per solved problem. Every ${XP_PER_LEVEL.toLocaleString()} XP = 1 Level.` },
             { label: 'Day Streak', value: animStreak, sub: stats.currentStreak > 0 ? 'Keep it up!' : 'Solve to start!', icon: Flame, color: '#ff8a63', glow: 'rgba(255,138,99,0.12)' },
-            { label: 'XP Points', value: animXP, sub: `Level ${level}`, icon: Zap, color: '#ffd700', glow: 'rgba(255,215,0,0.12)' },
-            { label: 'Day Streak', value: animStreak, sub: 'Resets at midnight UTC', icon: Flame, color: '#ff8a63', glow: 'rgba(255,138,99,0.12)' },
             { label: 'Global Rank', value: `#${rankInfo.rank}`, sub: `Top ${rankInfo.topPercent}%`, icon: Trophy, color: '#88ff9f', glow: 'rgba(136,255,159,0.12)' },
           ].map((stat) => (
-            <motion.div
+            <motion.output
               key={stat.label}
               whileHover={{ scale: 1.03, y: -4 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className="relative glass rounded-2xl p-5 overflow-hidden group cursor-default"
-              role="status"
               aria-label={`${stat.label}: ${stat.value}`}
             >
               {stat.tooltip && (
@@ -475,7 +472,7 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                 className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: stat.glow }}
               />
-            </motion.div>
+            </motion.output>
           ))}
         </motion.div>
 
@@ -583,7 +580,9 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
 
                 {/* Difficulty Breakdown */}
                 <div className="flex-1 grid grid-cols-3 gap-4 w-full">
-                  {donutData.map((d) => (
+                  {donutData.map((d) => {
+                    const donutBorder = hoveredDonut === d.label ? `${d.color}40` : 'rgba(255,255,255,0.05)';
+                    return (
                     <motion.div
                       key={d.label}
                       whileHover={{ scale: 1.05 }}
@@ -592,7 +591,7 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                       className="text-center p-3 rounded-xl transition-all cursor-default"
                       style={{
                         background: hoveredDonut === d.label ? `${d.color}15` : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${hoveredDonut === d.label ? `${d.color}40` : 'rgba(255,255,255,0.05)'}`
+                        border: `1px solid ${donutBorder}`
                       }}
                     >
                       <div
@@ -604,7 +603,8 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                       <p className="text-xs text-white/50">{d.label}</p>
                       <p className="text-[10px] text-white/30 mt-0.5">of {d.total}</p>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -698,8 +698,9 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                     const y = maxWeekly > 0 ? 100 - (count / maxWeekly) * 82 : 100;
                     const isHovered = hoveredDay === i;
                     const isToday = i === 6;
+                    const dotRadius = isHovered ? 5 : isToday ? 4 : 3.5;
                     return (
-                      <g key={i}
+                      <g key={dayLabels[i]}
                         onMouseEnter={() => setHoveredDay(i)}
                         onMouseLeave={() => setHoveredDay(null)}
                         className="cursor-pointer"
@@ -722,7 +723,7 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                         {/* Dot */}
                         <motion.circle
                           initial={{ r: 0 }}
-                          animate={{ r: isHovered ? 5 : isToday ? 4 : 3.5 }}
+                          animate={{ r: dotRadius }}
                           transition={{ duration: 0.2 }}
                           cx={x} cy={y}
                           fill={isToday ? '#63e3ff' : '#a088ff'}
@@ -845,7 +846,7 @@ export function Dashboard({ onNavigate }: Readonly<DashboardProps>) {
                   const diffColor = difficultyColor(activity.difficulty);
                   return (
                     <motion.div
-                      key={index}
+                      key={`${activity.problem}-${activity.time}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.5 + index * 0.08 }}

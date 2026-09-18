@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { getOrSet, TTL } from '../utils/cache';
+import { executionRequestError, formatExecutionResult, resolveTestCases } from '../utils/executionResult';
 
 /** One consistent server-side log line per failed content endpoint. */
 function logContentError(route: string, error: unknown): void {
@@ -269,12 +270,9 @@ export const executeCode = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { code, language } = req.body;
 
-        const MAX_CODE_LENGTH = 50000;
-        if (typeof code !== 'string' || typeof language !== 'string' || !code || !language) {
-            return res.status(400).json({ message: 'Code and language are required' });
-        }
-        if (code.length > MAX_CODE_LENGTH) {
-            return res.status(400).json({ message: 'Code exceeds maximum allowed length.' });
+        const requestError = executionRequestError(code, language);
+        if (requestError) {
+            return res.status(400).json({ message: requestError });
         }
 
         const problem = await prisma.problem.findUnique({
@@ -295,9 +293,7 @@ export const executeCode = async (req: Request, res: Response) => {
         const version = PISTON_LANGUAGES[language] || '*';
 
         // If no test cases exist, just run the code with empty stdin
-        const testCases = problem.testCases && problem.testCases.length > 0
-            ? problem.testCases
-            : [{ input: '', expectedOutput: '', isHidden: false }];
+        const testCases = resolveTestCases(problem.testCases);
 
         const results = await Promise.all(testCases.map(async (testCase) => {
             const response = await fetch('https://emkc.org/api/v2/piston/execute', {
@@ -321,32 +317,7 @@ export const executeCode = async (req: Request, res: Response) => {
             });
 
             const data = await response.json();
-            const output = data.run?.output || data.message || 'No output';
-            const stdout = data.run?.stdout || '';
-            const stderr = data.run?.stderr || '';
-            const error = data.compile?.stderr || data.run?.stderr || '';
-            const isError = data.run?.signal ? true : data.run?.code !== 0;
-
-            let passed = false;
-            if (!isError) {
-                // Trim trailing whitespaces/newlines for comparison
-                const actual = stdout.trim();
-                const expected = testCase.expectedOutput.trim();
-                passed = actual === expected;
-            }
-
-            return {
-                input: testCase.isHidden ? 'Hidden Test Case' : testCase.input,
-                expectedOutput: testCase.isHidden ? 'Hidden' : testCase.expectedOutput,
-                output: testCase.isHidden ? (passed ? 'Hidden' : 'Hidden Test Case Failed') : output,
-                stdout: testCase.isHidden ? 'Hidden' : stdout,
-                stderr: testCase.isHidden ? (error ? 'Hidden Error' : '') : stderr,
-                error: testCase.isHidden ? (error ? 'Hidden Error' : '') : error,
-                passed,
-                isError,
-                executionTime: data.run?.signal ? 'Timeout' : data.run?.code === 0 ? 'Success' : 'Error',
-                isHidden: testCase.isHidden
-            };
+            return formatExecutionResult(data, testCase);
         }));
 
         const allPassed = results.every(r => r.passed);

@@ -38,6 +38,23 @@ const QUICK_ACTIONS = [
     { text: '🌳 Explain tree traversals', emoji: '🌳', label: 'Tree Traversals' },
 ];
 
+/** Markdown link syntax, reused with .exec() for each chunk. */
+const LINK_PATTERN = /\[(.*?)\]\((.*?)\)/;
+
+/**
+ * Builds deterministic, content-derived React keys for markdown chunks.
+ * Keys stay stable across re-renders (same text → same key) and stay unique
+ * among siblings without relying on array positions.
+ */
+function createKeyFactory() {
+    const seen = new Map<string, number>();
+    return (content: string) => {
+        const occurrence = seen.get(content) ?? 0;
+        seen.set(content, occurrence + 1);
+        return occurrence === 0 ? content : `${content}#${occurrence}`;
+    };
+}
+
 export function AlgoBot({ onAuthClick }: Readonly<{ onAuthClick: (mode: 'login' | 'signup') => void }>) {
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
@@ -128,33 +145,36 @@ export function AlgoBot({ onAuthClick }: Readonly<{ onAuthClick: (mode: 'login' 
     const renderContent = (text: string) => {
         // Split into paragraphs first for proper spacing
         const paragraphs = text.split('\n\n');
+        const paragraphKey = createKeyFactory();
+        const lineKey = createKeyFactory();
 
-        return paragraphs.map((paragraph, pi) => {
+        return paragraphs.map((paragraph, idx) => {
+            const pKey = paragraphKey(paragraph);
             // Handle list items within a paragraph
             const lines = paragraph.split('\n');
             const isListParagraph = lines.some(l => l.trim().startsWith('- '));
 
             if (isListParagraph) {
                 return (
-                    <div key={pi} className="space-y-1.5 my-2">
-                        {lines.map((line, li) => {
+                    <div key={pKey} className="space-y-1.5 my-2">
+                        {lines.map((line) => {
                             if (line.trim().startsWith('- ')) {
                                 const content = line.trim().slice(2);
                                 return (
-                                    <div key={li} className="flex items-start gap-2 pl-1">
+                                    <div key={lineKey(line)} className="flex items-start gap-2 pl-1">
                                         <span className="text-emerald-400/60 mt-0.5">•</span>
                                         <span className="flex-1">{renderInline(content)}</span>
                                     </div>
                                 );
                             }
-                            return <div key={li}>{renderInline(line)}</div>;
+                            return <div key={lineKey(line)}>{renderInline(line)}</div>;
                         })}
                     </div>
                 );
             }
 
             return (
-                <div key={pi} className={pi > 0 ? 'mt-3' : ''}>
+                <div key={pKey} className={idx > 0 ? 'mt-3' : ''}>
                     {renderInline(paragraph.replace(/\n/g, ' '))}
                 </div>
             );
@@ -163,28 +183,30 @@ export function AlgoBot({ onAuthClick }: Readonly<{ onAuthClick: (mode: 'login' 
 
     const renderInline = (text: string) => {
         const parts = text.split(/(```[\s\S]*?```|\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g);
-        return parts.map((part, i) => {
+        const partKey = createKeyFactory();
+        return parts.map((part) => {
+            const key = partKey(part);
             if (part.startsWith('```') && part.endsWith('```')) {
                 const lines = part.slice(3, -3);
                 const langEnd = lines.indexOf('\n');
                 const code = langEnd > -1 ? lines.slice(langEnd + 1) : lines;
                 return (
-                    <pre key={i} className="bg-black/30 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-emerald-300 border border-white/5">
+                    <pre key={key} className="bg-black/30 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-emerald-300 border border-white/5">
                         <code>{code.trim()}</code>
                     </pre>
                 );
             }
             if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
+                return <strong key={key} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
             }
             if (part.startsWith('`') && part.endsWith('`') && !part.startsWith('```')) {
-                return <code key={i} className="bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
+                return <code key={key} className="bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
             }
-            const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+            const linkMatch = LINK_PATTERN.exec(part);
             if (linkMatch) {
-                return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline decoration-emerald-400/30 hover:decoration-emerald-400 transition-all">{linkMatch[1]}</a>;
+                return <a key={key} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline decoration-emerald-400/30 hover:decoration-emerald-400 transition-all">{linkMatch[1]}</a>;
             }
-            return <span key={i}>{part}</span>;
+            return <span key={key}>{part}</span>;
         });
     };
 

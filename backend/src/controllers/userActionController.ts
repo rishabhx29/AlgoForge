@@ -201,6 +201,7 @@ export const updateNotes = async (req: Request, res: Response) => {
 
         res.json(progress);
     } catch (error) {
+        console.error('Error updating notes:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -211,6 +212,7 @@ export const getUserProgress = async (req: Request, res: Response) => {
         const progress = await prisma.userProgress.findMany({ where: { user_id: userId } });
         res.json(progress);
     } catch (error) {
+        console.error('Error fetching progress:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

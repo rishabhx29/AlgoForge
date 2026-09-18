@@ -3,10 +3,6 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db';
 import { config } from '../config/env';
 
-interface JwtPayload {
-    id: string;
-}
-
 declare global {
     namespace Express {
         interface Request {
@@ -17,15 +13,16 @@ declare global {
 
 const protect = async (req: Request, res: Response, next: NextFunction) => {
     let token;
+    const authHeader = req.headers.authorization;
 
-    if (
-        req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer')
-    ) {
+    if (authHeader?.startsWith('Bearer')) {
         try {
-            token = req.headers.authorization.split(' ')[1];
+            token = authHeader.split(' ')[1];
 
-            const decoded = jwt.verify(token, config.JWT_SECRET!) as JwtPayload;
+            const decoded = jwt.verify(token, config.JWT_SECRET!);
+            if (typeof decoded === 'string' || typeof decoded.id !== 'string') {
+                throw new Error('Invalid token payload');
+            }
 
             const user = await prisma.user.findUnique({
                 where: { id: decoded.id },

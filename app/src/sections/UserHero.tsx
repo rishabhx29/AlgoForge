@@ -402,7 +402,7 @@ export function UserHero({ user, onTopicClick }: Readonly<UserHeroProps>) {
                                         const y = maxActivity > 0 ? 100 - (d.count / maxActivity) * 82 : 100;
                                         const isToday = i === 6;
                                         return (
-                                            <g key={i}>
+                                            <g key={d.day}>
                                                 {/* Outer glow for today */}
                                                 {isToday && (
                                                     <circle cx={x} cy={y} r={7}
@@ -433,7 +433,7 @@ export function UserHero({ user, onTopicClick }: Readonly<UserHeroProps>) {
                                         const x = 40 + i * 46;
                                         const isToday = i === 6;
                                         return (
-                                            <text key={'label' + i} x={x} y={118} textAnchor="middle"
+                                            <text key={d.day} x={x} y={118} textAnchor="middle"
                                                 fill={isToday ? '#63e3ff' : 'white'}
                                                 fillOpacity={isToday ? 0.8 : 0.35}
                                                 fontSize="8" fontWeight={isToday ? '600' : '400'}>
@@ -473,8 +473,8 @@ export function UserHero({ user, onTopicClick }: Readonly<UserHeroProps>) {
 
                             {/* Dynamic goals */}
                             { }
-                            {nextGoals.map((goal: any, index: number) => (
-                                <div key={index} className="p-4 bg-white/5 rounded-xl border border-white/10">
+                            {nextGoals.map((goal: any) => (
+                                <div key={goal.title} className="p-4 bg-white/5 rounded-xl border border-white/10">
                                     <h4 className="font-medium text-white mb-1">{goal.title}</h4>
                                     <p className="text-xs text-white/40 mb-2">{goal.subtitle}</p>
                                     {goal.target && (
@@ -486,8 +486,8 @@ export function UserHero({ user, onTopicClick }: Readonly<UserHeroProps>) {
                                         </div>
                                     )}
                                     <div className="flex items-center gap-2">
-                                        {goal.rewards.map((reward: string, ri: number) => (
-                                            <span key={ri} className="text-xs px-2 py-1 rounded bg-[#a088ff]/20 text-[#a088ff]">
+                                        {goal.rewards.map((reward: string) => (
+                                            <span key={reward} className="text-xs px-2 py-1 rounded bg-[#a088ff]/20 text-[#a088ff]">
                                                 {reward}
                                             </span>
                                         ))}

@@ -143,60 +143,60 @@ export const getPost = async (req: Request, res: Response) => {
     }
 };
 
+/** Returns the 400 message for invalid post input, or null when valid. */
+function validatePostInput(body: { title?: unknown; content?: unknown; tags?: unknown }): string | null {
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    if (!title) {
+        return 'Title is required';
+    }
+    if (title.length < 10) {
+        return 'Title must be at least 10 characters';
+    }
+    if (title.length > 150) {
+        return 'Title must be less than 150 characters';
+    }
+
+    const content = typeof body.content === 'string' ? body.content.trim() : '';
+    if (!content) {
+        return 'Content is required';
+    }
+    if (content.length < 20) {
+        return 'Content must be at least 20 characters';
+    }
+    if (content.length > 10000) {
+        return 'Content must be less than 10,000 characters';
+    }
+
+    if (body.tags !== undefined && body.tags !== null && !Array.isArray(body.tags)) {
+        return 'Tags must be an array';
+    }
+    const tags = Array.isArray(body.tags) ? body.tags : [];
+    if (tags.length > 5) {
+        return 'Maximum 5 tags allowed';
+    }
+    for (const tag of tags) {
+        if (typeof tag !== 'string' || tag.trim().length > 30) {
+            return 'Each tag must be 30 characters or less';
+        }
+    }
+    return null;
+}
+
 export const createPost = async (req: Request, res: Response) => {
     try {
-        const { title, content, category, tags } = req.body;
+        const { content, category, tags } = req.body;
 
-        // Validate title
-        if (typeof title !== 'string') {
-            return res.status(400).json({ message: 'Title is required' });
-        }
-        const trimmedTitle = title.trim();
-        if (!trimmedTitle) {
-            return res.status(400).json({ message: 'Title is required' });
-        }
-        if (trimmedTitle.length < 10) {
-            return res.status(400).json({ message: 'Title must be at least 10 characters' });
-        }
-        if (trimmedTitle.length > 150) {
-            return res.status(400).json({ message: 'Title must be less than 150 characters' });
-        }
-
-        // Validate content
-        if (typeof content !== 'string') {
-            return res.status(400).json({ message: 'Content is required' });
-        }
-        const trimmedContent = content.trim();
-        if (!trimmedContent) {
-            return res.status(400).json({ message: 'Content is required' });
-        }
-        if (trimmedContent.length < 20) {
-            return res.status(400).json({ message: 'Content must be at least 20 characters' });
-        }
-        if (trimmedContent.length > 10000) {
-            return res.status(400).json({ message: 'Content must be less than 10,000 characters' });
-        }
-
-        // Validate tags
-        if (tags !== undefined && tags !== null && !Array.isArray(tags)) {
-            return res.status(400).json({ message: 'Tags must be an array' });
-        }
-        const postTags = Array.isArray(tags) ? tags : [];
-        if (postTags.length > 5) {
-            return res.status(400).json({ message: 'Maximum 5 tags allowed' });
-        }
-        for (const tag of postTags) {
-            if (typeof tag !== 'string' || tag.trim().length > 30) {
-                return res.status(400).json({ message: 'Each tag must be 30 characters or less' });
-            }
+        const validationError = validatePostInput(req.body);
+        if (validationError) {
+            return res.status(400).json({ message: validationError });
         }
 
         const post = await prisma.forumPost.create({
             data: {
-                title: trimmedTitle,
-                content: trimmedContent,
+                title: (req.body.title as string).trim(),
+                content: (content as string).trim(),
                 category: category || 'general',
-                tags: postTags.map((t: string) => t.trim()),
+                tags: (Array.isArray(tags) ? tags : []).map((t: string) => t.trim()),
                 authorId: req.user.id
             },
             include: { author: { select: { id: true, name: true, avatar: true } } }
