@@ -84,12 +84,12 @@ export const registerUser = async (req: Request, res: Response) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     }
-    catch (error: any) {
+    catch (error) {
         console.error('Register Error:', error);
 
         res.status(500).json({
             success: false,
-            message: error.message ||'Internal server error'
+            message: error instanceof Error ? error.message : 'Internal server error'
         });
     }
 };
@@ -103,7 +103,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({ where: { email } });
 
-        if (user && user.password && (await bcrypt.compare(password, user.password))) {
+        if (user?.password && (await bcrypt.compare(password, user.password))) {
             if (user.isBanned) {
                 res.status(403).json({ message: 'Your account has been suspended' });
                 return;
@@ -112,7 +112,7 @@ export const loginUser = async (req: Request, res: Response) => {
         } else {
             res.status(400).json({ message: 'Invalid credentials' });
         }
-    } catch (error: any) {
+    } catch (error) {
         console.error('Login Error:', error);
 
         res.status(500).json({
